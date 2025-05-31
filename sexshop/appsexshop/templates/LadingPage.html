@@ -192,10 +192,12 @@
     </div>
   
     <!--cards productos Destacados-->
-    <div class="featured-collections">
-        <h4 class="titulosLading" style="color:#f5365c;  text-align:center; "><hr> ✰ Colecciones destacadas ✰<p style="font-size: 14px; color: #000000;">¡Descubre tu placer!</p><hr></h4>
+    <h4 class="titulosLading" style="color:#f5365c;  text-align:center; "><hr> ✰ Colecciones destacadas ✰<p style="font-size: 14px; color: #000000;">¡Descubre tu placer!</p><hr></h4>
+    <div class="featured-collections ">
+        
 
         <!-- card 1-->
+  
         <div class="card1">
           <div class="image-container">
             <img src="{% static 'img/producto1.png' %}" class="card-img-top" alt="..." style="height: 150px; object-fit: cover;">
@@ -224,7 +226,7 @@
         </div>
 
         <!-- card 3-->
-        <div class="card1">
+        <div class="card1 ">
           <div class="image-container">
             <img src="{% static 'img/juguetes.png' %}" class="card-img-top" alt="..." style="height: 150px; object-fit: cover;">
             <div class="overlay">
@@ -253,6 +255,7 @@
     </div>
 
 
+
     <!--cards productos con slider-->
     <div class="products-section">
       <h4 class="titulosLading" style="color:#f5365c;"><center><hr> Nuestros Productos <p style="font-size: 14px; color: #000000;">¡Tu placer, nuestra pasión!</p><hr></center></h4>
@@ -264,7 +267,7 @@
         <div class="carousel-item {% if forloop.first %}active{% endif %}">
           <div class="row justify-content-center">
             {% for prod in grupo %}
-              <div class="col-md-3 mb-4 d-flex justify-content-center">
+              <div class="col-6 col-md-3 mb-4 d-flex justify-content-center">
                 
                 <div class="card"
                      style="width: 18rem; box-shadow: 10px 10px 10px black;"

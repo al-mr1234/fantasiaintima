@@ -120,8 +120,6 @@ width: 50%;
   }
 
 
-
-
 /* menu desplegable */
 .offcanvas {
   width: 50vw; /* Ajusta el ancho del offcanvas en pantallas pequeñas */
@@ -147,25 +145,29 @@ width: 50%;
   font-weight: bolder;
 }
 
-
-
-
 /* card de productos destacados */
+.featured-collections{
+ display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
   .card1 {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     position: relative;
     overflow: hidden; /* Asegura que los elementos no se desborden */
     display: inline-block;
+    justify-content: center;
     vertical-align: top; /* Alineación vertical opcional */
     margin-right: 5px;
     margin: 10px;
     cursor: pointer;
     margin-left: 30px;
-    justify-content: center;
     border-radius: 10px;
     width: 290px;
      box-shadow: 10px 10px 10px black;
   }
+
   
   .card1:hover {
     transform: scale(1.05);
