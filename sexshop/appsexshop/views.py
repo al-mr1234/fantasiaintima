@@ -10,6 +10,7 @@ from django.utils import timezone
 from .models import usuario, CodigoVerificacion
 from django.db.models import Avg
 from django.views.decorators.csrf import csrf_exempt
+import re
 
 
 def LadingPage(request):
@@ -24,19 +25,44 @@ def LadingPage(request):
     return render(request, 'LadingPage.html', {
         'categorias': categorias,
         'productos_agrupados': productos_agrupados,
-        'username': request.session.get('username'),
-        'first_name': request.session.get('first_name'),
+        'username': request.session.get('username', ''),
+        'first_name': request.session.get('first_name', ''),
     })
 
 
 #region categorias
+def validar_nombre_categoria(nombre):
+    if not nombre or not nombre.strip():
+        return "El nombre no puede estar vacío."
+    if len(nombre.strip()) > 80:
+        return "Nombre demasiado largo (máximo 80 caracteres)."
+    if re.match(r'^[\s]+$', nombre):
+        return "Nombre inválido."
+    if re.search(r'[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s]', nombre):
+        return "No se permiten caracteres especiales."
+    return None
+
 def insertarcategorias(request):
     if request.method == "POST":
-        if request.POST.get('NombreCategoria'):
-            insertar = connection.cursor()
-            insertar.execute("CALL insertarcategorias(%s)", [request.POST.get('NombreCategoria')])
-            return redirect("listadocategorias")
-    return render(request, 'listadocategorias')
+        nombre = request.POST.get('NombreCategoria', '').strip()
+        error = validar_nombre_categoria(nombre)
+        if error:
+            messages.error(request, error)
+            return redirect('listadocategorias')
+        # Duplicados (case-insensitive)
+        cursor = connection.cursor()
+        cursor.execute("SELECT COUNT(*) FROM categoria WHERE LOWER(NombreCategoria) = LOWER(%s)", [nombre])
+        if cursor.fetchone()[0] > 0:
+            messages.error(request, "Categoría ya existe")
+            return redirect('listadocategorias')
+        # Límite de 80 caracteres para registrar (según tabla)
+        if len(nombre) > 80:
+            messages.error(request, "Nombre demasiado largo")
+            return redirect('listadocategorias')
+        cursor.execute("CALL insertarcategorias(%s)", [nombre])
+        messages.success(request, "Categoría registrada exitosamente")
+        return redirect("listadocategorias")
+    return redirect('listadocategorias')
 
 def listadocategorias(request):
     listado = connection.cursor()
@@ -45,20 +71,42 @@ def listadocategorias(request):
     return render(request, "crud/categorias.html", {"listado": categorias})
 
 def borrarcategoria(request, id_categoria):
-    borrar = connection.cursor()
-    borrar.execute("CALL borrarcategoria(%s)", [id_categoria])
+    # Verifica si tiene subcategorías
+    cursor = connection.cursor()
+    cursor.execute("SELECT COUNT(*) FROM subcategoria WHERE categoria_id = %s", [id_categoria])
+    if cursor.fetchone()[0] > 0:
+        messages.error(request, "No se puede eliminar una categoría con subcategorías.")
+        return redirect('listadocategorias')
+    cursor.execute("CALL borrarcategoria(%s)", [id_categoria])
+    messages.success(request, "Categoría eliminada")
     return redirect('listadocategorias')
 
 def actualizarcategoria(request, id_categoria):
     if request.method == "POST":
-        if request.POST.get('NombreCategoria'):
-            actualizar = connection.cursor()
-            actualizar.execute("CALL actualizarcategoria(%s, %s)", [id_categoria, request.POST.get('NombreCategoria')])
-            return redirect("listadocategorias")
+        nombre = request.POST.get('NombreCategoria', '').strip()
+        error = validar_nombre_categoria(nombre)
+        if error:
+            messages.error(request, error)
+            return redirect('actualizarcategoria', id_categoria=id_categoria)
+        # Duplicados (case-insensitive, excluyendo la actual)
+        cursor = connection.cursor()
+        cursor.execute(
+            "SELECT COUNT(*) FROM categoria WHERE LOWER(NombreCategoria) = LOWER(%s) AND IdCategoria != %s",
+            [nombre, id_categoria]
+        )
+        if cursor.fetchone()[0] > 0:
+            messages.error(request, "Categoría ya existe")
+            return redirect('actualizarcategoria', id_categoria=id_categoria)
+        if len(nombre) > 80:
+            messages.error(request, "Nombre demasiado largo")
+            return redirect('actualizarcategoria', id_categoria=id_categoria)
+        cursor.execute("CALL actualizarcategoria(%s, %s)", [id_categoria, nombre])
+        messages.success(request, "Categoría actualizada correctamente")
+        return redirect("listadocategorias")
     else:
-        categoria = connection.cursor()
-        categoria.execute("CALL consultarcategoria(%s)", [id_categoria])
-        categoria = categoria.fetchone()
+        categoria_cursor = connection.cursor()
+        categoria_cursor.execute("CALL consultarcategoria(%s)", [id_categoria])
+        categoria = categoria_cursor.fetchone()
         return render(request, 'crud/editar_categoria.html', {'categoria': categoria})
 # endregion
 
@@ -69,33 +117,79 @@ def listadosubcategorias(request):
     categorias = categoria.objects.all()
     return render(request, 'crud/subcategorias.html', {'subcategorias': subcategorias, 'categorias': categorias})
 
+def validar_nombre_subcategoria(nombre):
+    if not nombre or not nombre.strip():
+        return "El nombre no puede estar vacío."
+    if len(nombre.strip()) > 45:
+        return "Nombre demasiado largo (máximo 45 caracteres)."
+    if re.match(r'^[\s]+$', nombre):
+        return "Nombre inválido."
+    if re.search(r'[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s]', nombre):
+        return "No se permiten caracteres especiales."
+    return None
+
 def insertarsubcategoria(request):
     if request.method == "POST":
-        if request.POST.get('nombre') and request.POST.get('categoria_id'):
-            nueva_subcategoria = subcategoria()
-            nueva_subcategoria.NombresubCategoria = request.POST.get('nombre')
-            nueva_subcategoria.categoria = categoria.objects.get(IdCategoria=request.POST.get('categoria_id'))
-            nueva_subcategoria.save()
-            return redirect('listadosubcategorias')
-    categorias = categoria.objects.all()
-    return render(request, 'crud/subcategorias.html', {'categorias': categorias})
-
-def borrarsubcategoria(request, id_subcategoria):
-    subcategoria_obj = subcategoria.objects.get(IdSubCategoria=id_subcategoria)
-    subcategoria_obj.delete()
-    return redirect('listadosubcategorias')
+        nombre = request.POST.get('nombre', '').strip()
+        categoria_id = request.POST.get('categoria_id')
+        error = validar_nombre_subcategoria(nombre)
+        if error:
+            messages.error(request, error)
+            return redirect('crudSubCategorias')
+        # Duplicados (case-insensitive, por categoría)
+        if subcategoria.objects.filter(
+            NombresubCategoria__iexact=nombre,
+            categoria_id=categoria_id
+        ).exists():
+            messages.error(request, "Subcategoría ya existe en esta categoría")
+            return redirect('crudSubCategorias')
+        if len(nombre) > 45:
+            messages.error(request, "Nombre demasiado largo")
+            return redirect('crudSubCategorias')
+        # Crear subcategoría
+        cat = categoria.objects.get(IdCategoria=categoria_id)
+        subcategoria.objects.create(NombresubCategoria=nombre, categoria=cat)
+        messages.success(request, "Subcategoría registrada exitosamente")
+        return redirect('crudSubCategorias')
+    return redirect('crudSubCategorias')
 
 def actualizarsubcategoria(request, id_subcategoria):
-    subcategoria_obj = subcategoria.objects.get(IdSubCategoria=id_subcategoria)
     if request.method == "POST":
-        if request.POST.get('nombre') and request.POST.get('categoria_id'):
-            subcategoria_obj.NombresubCategoria = request.POST.get('nombre')
-            subcategoria_obj.categoria = categoria.objects.get(IdCategoria=request.POST.get('categoria_id'))
-            subcategoria_obj.save()
-            return redirect('listadosubcategorias')
-    else:
-        categorias = categoria.objects.all()
-        return render(request, 'crud/subcategorias.html', {'subcategoria': subcategoria_obj, 'categorias': categorias})
+        nombre = request.POST.get('nombre', '').strip()
+        categoria_id = request.POST.get('categoria_id')
+        error = validar_nombre_subcategoria(nombre)
+        if error:
+            messages.error(request, error)
+            return redirect('crudSubCategorias')
+        # Duplicados (case-insensitive, por categoría, excluyendo la actual)
+        cursor = connection.cursor()
+        cursor.execute(
+            "SELECT COUNT(*) FROM subcategoria WHERE LOWER(NombresubCategoria) = LOWER(%s) AND IdCategoria = %s AND IdSubCategoria != %s",
+            [nombre, categoria_id, id_subcategoria]
+        )
+        if cursor.fetchone()[0] > 0:
+            messages.error(request, "Subcategoría ya existe en esta categoría")
+            return redirect('crudSubCategorias')
+        if len(nombre) > 45:
+            messages.error(request, "Nombre demasiado largo")
+            return redirect('crudSubCategorias')
+        cursor.execute("CALL actualizarsubcategoria(%s, %s, %s)", [id_subcategoria, nombre, categoria_id])
+        messages.success(request, "Subcategoría actualizada correctamente")
+        return redirect('crudSubCategorias')
+    return redirect('crudSubCategorias')
+
+def borrarsubcategoria(request, id_subcategoria):
+    try:
+        subcat = subcategoria.objects.get(IdSubCategoria=id_subcategoria)
+        # Verifica si hay productos asociados a esta subcategoría
+        if producto.objects.filter(IdSubCategoria=subcat).exists():
+            messages.error(request, "No se puede eliminar la subcategoría porque tiene productos asociados.")
+            return redirect('crudSubCategorias')
+        subcat.delete()
+        messages.success(request, "Subcategoría eliminada")
+    except subcategoria.DoesNotExist:
+        messages.error(request, "La subcategoría no existe")
+    return redirect('crudSubCategorias')
 #endregion
 
 
@@ -417,6 +511,7 @@ def borrardomiciliario(request, id_domiciliario):
 
 
 #region productos
+
 def insertarproducto(request):
     if request.method == "POST":
         if (request.POST.get('Nombre') and request.POST.get('Descripcion') and
@@ -495,6 +590,8 @@ def guardar_calificacion(request):
     return JsonResponse({'success': False, 'mensaje': 'Método no permitido'})
 
     
+#endregion
+
 
 # region perfiles
 def perfiles(request):
