@@ -26,7 +26,15 @@
 <body>
 
   <div class="form-container">
-    <p class="title">Registrate en <br> Fantasia Intima</p>
+    {% if messages %}
+      {% for message in messages %}
+        <p id="registro-title" class="title" style="color: #f5365c; text-align: center;">
+          {{ message }}
+        </p>
+      {% endfor %}
+    {% else %}
+      <p id="registro-title" class="title">Registrate en <br> Fantasia Intima</p>
+    {% endif %}
 
     <div class="inputs">
       <form class="form" method="post" action="{% url 'registro' %}">
@@ -75,7 +83,18 @@
   </div>
 
   <script>
+  // Solo si hay mensaje de error
+  const title = document.getElementById('registro-title');
+  const originalTitle = 'Registrate en <br> Fantasia Intima';
 
+  if (title && title.style.color === 'rgb(245, 54, 92)') {
+    document.querySelectorAll('.form input').forEach(input => {
+      input.addEventListener('input', () => {
+        title.innerHTML = originalTitle;
+        title.style.color = '';
+      });
+    });
+  }
   </script>
 </body>
 </html>

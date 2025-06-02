@@ -10,12 +10,15 @@ from django.utils import timezone
 from .models import usuario, CodigoVerificacion
 from django.db.models import Avg
 from django.views.decorators.csrf import csrf_exempt
+from django.db import IntegrityError
 import re
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 
 def LadingPage(request):
     categorias = categoria.objects.all().prefetch_related('subcategoria_set')
-    productos = producto.objects.all().select_related('IdSubCategoria__categoria').order_by('-IdProducto') # Ordena por ID 
+    productos = producto.objects.all().select_related('IdSubCategoria__categoria').order_by('-IdProducto')
 
     def agrupar_productos(productos, grupo_de):
         return [productos[i:i+grupo_de] for i in range(0, len(productos), grupo_de)]
@@ -25,44 +28,20 @@ def LadingPage(request):
     return render(request, 'LadingPage.html', {
         'categorias': categorias,
         'productos_agrupados': productos_agrupados,
+        'productos': productos,  # <-- AGREGA ESTA LÍNEA
         'username': request.session.get('username', ''),
         'first_name': request.session.get('first_name', ''),
     })
 
 
 #region categorias
-def validar_nombre_categoria(nombre):
-    if not nombre or not nombre.strip():
-        return "El nombre no puede estar vacío."
-    if len(nombre.strip()) > 80:
-        return "Nombre demasiado largo (máximo 80 caracteres)."
-    if re.match(r'^[\s]+$', nombre):
-        return "Nombre inválido."
-    if re.search(r'[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s]', nombre):
-        return "No se permiten caracteres especiales."
-    return None
-
 def insertarcategorias(request):
     if request.method == "POST":
-        nombre = request.POST.get('NombreCategoria', '').strip()
-        error = validar_nombre_categoria(nombre)
-        if error:
-            messages.error(request, error)
-            return redirect('listadocategorias')
-        # Duplicados (case-insensitive)
-        cursor = connection.cursor()
-        cursor.execute("SELECT COUNT(*) FROM categoria WHERE LOWER(NombreCategoria) = LOWER(%s)", [nombre])
-        if cursor.fetchone()[0] > 0:
-            messages.error(request, "Categoría ya existe")
-            return redirect('listadocategorias')
-        # Límite de 80 caracteres para registrar (según tabla)
-        if len(nombre) > 80:
-            messages.error(request, "Nombre demasiado largo")
-            return redirect('listadocategorias')
-        cursor.execute("CALL insertarcategorias(%s)", [nombre])
-        messages.success(request, "Categoría registrada exitosamente")
-        return redirect("listadocategorias")
-    return redirect('listadocategorias')
+        if request.POST.get('NombreCategoria'):
+            insertar = connection.cursor()
+            insertar.execute("CALL insertarcategorias(%s)", [request.POST.get('NombreCategoria')])
+            return redirect("listadocategorias")
+    return render(request, 'listadocategorias')
 
 def listadocategorias(request):
     listado = connection.cursor()
@@ -71,42 +50,24 @@ def listadocategorias(request):
     return render(request, "crud/categorias.html", {"listado": categorias})
 
 def borrarcategoria(request, id_categoria):
-    # Verifica si tiene subcategorías
-    cursor = connection.cursor()
-    cursor.execute("SELECT COUNT(*) FROM subcategoria WHERE categoria_id = %s", [id_categoria])
-    if cursor.fetchone()[0] > 0:
-        messages.error(request, "No se puede eliminar una categoría con subcategorías.")
-        return redirect('listadocategorias')
-    cursor.execute("CALL borrarcategoria(%s)", [id_categoria])
-    messages.success(request, "Categoría eliminada")
+    try:
+        borrar = connection.cursor()
+        borrar.execute("CALL borrarcategoria(%s)", [id_categoria])
+        messages.success(request, "Categoría eliminada correctamente.")
+    except IntegrityError:
+        messages.error(request, "No se puede eliminar la categoría porque tiene subcategorías asociadas.")
     return redirect('listadocategorias')
 
 def actualizarcategoria(request, id_categoria):
     if request.method == "POST":
-        nombre = request.POST.get('NombreCategoria', '').strip()
-        error = validar_nombre_categoria(nombre)
-        if error:
-            messages.error(request, error)
-            return redirect('actualizarcategoria', id_categoria=id_categoria)
-        # Duplicados (case-insensitive, excluyendo la actual)
-        cursor = connection.cursor()
-        cursor.execute(
-            "SELECT COUNT(*) FROM categoria WHERE LOWER(NombreCategoria) = LOWER(%s) AND IdCategoria != %s",
-            [nombre, id_categoria]
-        )
-        if cursor.fetchone()[0] > 0:
-            messages.error(request, "Categoría ya existe")
-            return redirect('actualizarcategoria', id_categoria=id_categoria)
-        if len(nombre) > 80:
-            messages.error(request, "Nombre demasiado largo")
-            return redirect('actualizarcategoria', id_categoria=id_categoria)
-        cursor.execute("CALL actualizarcategoria(%s, %s)", [id_categoria, nombre])
-        messages.success(request, "Categoría actualizada correctamente")
-        return redirect("listadocategorias")
+        if request.POST.get('NombreCategoria'):
+            actualizar = connection.cursor()
+            actualizar.execute("CALL actualizarcategoria(%s, %s)", [id_categoria, request.POST.get('NombreCategoria')])
+            return redirect("listadocategorias")
     else:
-        categoria_cursor = connection.cursor()
-        categoria_cursor.execute("CALL consultarcategoria(%s)", [id_categoria])
-        categoria = categoria_cursor.fetchone()
+        categoria = connection.cursor()
+        categoria.execute("CALL consultarcategoria(%s)", [id_categoria])
+        categoria = categoria.fetchone()
         return render(request, 'crud/editar_categoria.html', {'categoria': categoria})
 # endregion
 
@@ -119,13 +80,9 @@ def listadosubcategorias(request):
 
 def validar_nombre_subcategoria(nombre):
     if not nombre or not nombre.strip():
-        return "El nombre no puede estar vacío."
-    if len(nombre.strip()) > 45:
-        return "Nombre demasiado largo (máximo 45 caracteres)."
-    if re.match(r'^[\s]+$', nombre):
-        return "Nombre inválido."
+        return "Nombre requerido"
     if re.search(r'[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s]', nombre):
-        return "No se permiten caracteres especiales."
+        return "Nombre inválido"
     return None
 
 def insertarsubcategoria(request):
@@ -136,24 +93,18 @@ def insertarsubcategoria(request):
         if error:
             messages.error(request, error)
             return redirect('crudSubCategorias')
-        # Duplicados (case-insensitive, por categoría)
-        if subcategoria.objects.filter(
-            NombresubCategoria__iexact=nombre,
-            categoria_id=categoria_id
-        ).exists():
-            messages.error(request, "Subcategoría ya existe en esta categoría")
+        # Duplicado
+        if subcategoria.objects.filter(NombresubCategoria__iexact=nombre, categoria_id=categoria_id).exists():
+            messages.error(request, "Subcategoría ya existe")
             return redirect('crudSubCategorias')
-        if len(nombre) > 45:
-            messages.error(request, "Nombre demasiado largo")
-            return redirect('crudSubCategorias')
-        # Crear subcategoría
-        cat = categoria.objects.get(IdCategoria=categoria_id)
-        subcategoria.objects.create(NombresubCategoria=nombre, categoria=cat)
+        nueva_subcategoria = subcategoria(NombresubCategoria=nombre, categoria_id=categoria_id)
+        nueva_subcategoria.save()
         messages.success(request, "Subcategoría registrada exitosamente")
         return redirect('crudSubCategorias')
     return redirect('crudSubCategorias')
 
 def actualizarsubcategoria(request, id_subcategoria):
+    subcat = get_object_or_404(subcategoria, IdSubCategoria=id_subcategoria)
     if request.method == "POST":
         nombre = request.POST.get('nombre', '').strip()
         categoria_id = request.POST.get('categoria_id')
@@ -161,91 +112,142 @@ def actualizarsubcategoria(request, id_subcategoria):
         if error:
             messages.error(request, error)
             return redirect('crudSubCategorias')
-        # Duplicados (case-insensitive, por categoría, excluyendo la actual)
-        cursor = connection.cursor()
-        cursor.execute(
-            "SELECT COUNT(*) FROM subcategoria WHERE LOWER(NombresubCategoria) = LOWER(%s) AND IdCategoria = %s AND IdSubCategoria != %s",
-            [nombre, categoria_id, id_subcategoria]
-        )
-        if cursor.fetchone()[0] > 0:
-            messages.error(request, "Subcategoría ya existe en esta categoría")
+        # Sin cambios
+        if nombre == subcat.NombresubCategoria and int(categoria_id) == subcat.categoria_id:
+            messages.info(request, "Sin cambios realizados")
             return redirect('crudSubCategorias')
-        if len(nombre) > 45:
-            messages.error(request, "Nombre demasiado largo")
+        # Duplicado
+        if subcategoria.objects.filter(NombresubCategoria__iexact=nombre, categoria_id=categoria_id).exclude(IdSubCategoria=id_subcategoria).exists():
+            messages.error(request, "Subcategoría ya existe")
             return redirect('crudSubCategorias')
-        cursor.execute("CALL actualizarsubcategoria(%s, %s, %s)", [id_subcategoria, nombre, categoria_id])
-        messages.success(request, "Subcategoría actualizada correctamente")
+        subcat.NombresubCategoria = nombre
+        subcat.categoria_id = categoria_id
+        subcat.save()
+        messages.success(request, "Subcategoría actualizada exitosamente")
         return redirect('crudSubCategorias')
     return redirect('crudSubCategorias')
 
 def borrarsubcategoria(request, id_subcategoria):
-    try:
-        subcat = subcategoria.objects.get(IdSubCategoria=id_subcategoria)
-        # Verifica si hay productos asociados a esta subcategoría
-        if producto.objects.filter(IdSubCategoria=subcat).exists():
-            messages.error(request, "No se puede eliminar la subcategoría porque tiene productos asociados.")
-            return redirect('crudSubCategorias')
-        subcat.delete()
-        messages.success(request, "Subcategoría eliminada")
-    except subcategoria.DoesNotExist:
-        messages.error(request, "La subcategoría no existe")
+    subcat = get_object_or_404(subcategoria, IdSubCategoria=id_subcategoria)
+    # Bloquear si tiene productos relacionados
+    if producto.objects.filter(IdSubCategoria=subcat).exists():
+        messages.error(request, "Subcategoría en uso")
+        return redirect('crudSubCategorias')
+    subcat.delete()
+    messages.success(request, "Subcategoría eliminada")
     return redirect('crudSubCategorias')
 #endregion
 
 
 # region login
+def validar_registro_usuario(data):
+    # Todos los campos obligatorios
+    campos = ['PrimerNombre', 'OtrosNombres', 'PrimerApellido', 'SegundoApellido', 'Correo', 'NombreUsuario', 'Contraseña']
+    for campo in campos:
+        if not data.get(campo) or not data.get(campo).strip():
+            if campo == 'NombreUsuario':
+                return "Nombre de usuario es obligatorio"
+            if campo == 'Contraseña':
+                return "Contraseña es obligatoria"
+            return "Todos los campos son obligatorios"
+
+    # Nombre de usuario largo/corto
+    nombre_usuario = data.get('NombreUsuario').strip()
+    if len(nombre_usuario) < 3:
+        return "El nombre de usuario debe tener al menos 3 caracteres"
+    if len(nombre_usuario) > 50:
+        return "Nombre excede el límite de caracteres"
+
+    # Contraseña débil y con espacios
+    contraseña = data.get('Contraseña')
+    if len(contraseña) < 8:
+        return "La contraseña debe tener al menos 8 caracteres"
+    if ' ' in contraseña:
+        return "La contraseña no debe contener espacios"
+
+    return None
+
 def registro(request):
     if request.method == "POST":
-        if (request.POST.get('PrimerNombre') and request.POST.get('OtrosNombres') and 
-            request.POST.get('PrimerApellido') and request.POST.get('SegundoApellido') and 
-            request.POST.get('Correo') and request.POST.get('NombreUsuario') and 
-            request.POST.get('Contraseña')):
-            
-            rol_default = roles.objects.get(IdRol=3) 
-            nuevo_usuario = usuario(
-                PrimerNombre=request.POST.get('PrimerNombre'),
-                OtrosNombres=request.POST.get('OtrosNombres'),
-                PrimerApellido=request.POST.get('PrimerApellido'),
-                SegundoApellido=request.POST.get('SegundoApellido'),
-                Correo=request.POST.get('Correo'),
-                NombreUsuario=request.POST.get('NombreUsuario'),
-                Contraseña=make_password(request.POST.get('Contraseña')),
-                idRol=rol_default
-            )   
-            nuevo_usuario.save()
-            return redirect('login')
+        error = validar_registro_usuario(request.POST)
+        if error:
+            messages.error(request, error)
+            return render(request, 'login/registro.html')
+
+        # Usuario duplicado (case sensitive permitido)
+        nombre_usuario = request.POST.get('NombreUsuario').strip()
+        if usuario.objects.filter(NombreUsuario=nombre_usuario).exists():
+            messages.error(request, "El usuario ya existe")
+            return render(request, 'login/registro.html')
+
+        rol_default = roles.objects.get(IdRol=3)
+        nuevo_usuario = usuario(
+            PrimerNombre=request.POST.get('PrimerNombre').strip(),
+            OtrosNombres=request.POST.get('OtrosNombres').strip(),
+            PrimerApellido=request.POST.get('PrimerApellido').strip(),
+            SegundoApellido=request.POST.get('SegundoApellido').strip(),
+            Correo=request.POST.get('Correo').strip(),
+            NombreUsuario=nombre_usuario,
+            Contraseña=make_password(request.POST.get('Contraseña')),
+            idRol=rol_default
+        )
+        nuevo_usuario.save()
+        messages.success(request, "Usuario registrado exitosamente")
+        return redirect('login')
     return render(request, 'login/registro.html') 
 
 
 def login(request):
+    # --- Bloqueo tras múltiples intentos fallidos ---
+    max_intentos = 5
+    intentos = request.session.get('login_intentos', 0)
+    bloqueado = request.session.get('login_bloqueado', False)
+
+    if bloqueado:
+        return render(request, 'login/login.html', {'error': 'Cuenta bloqueada temporalmente'})
+
     if request.method == "POST":
-        correo = request.POST.get('correo')
-        contraseña = request.POST.get('contraseña')
-        
+        correo = request.POST.get('correo', '').strip()
+        contraseña = request.POST.get('contraseña', '').strip()
+
+        # --- Validación de campos vacíos ---
+        if not correo and not contraseña:
+            return render(request, 'login/login.html', {'error': 'Campos obligatorios'})
+        if not correo:
+            return render(request, 'login/login.html', {'error': 'Este campo es obligatorio'})
+        if not contraseña:
+            return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
+
+        # --- Validación de formato de correo ---
+        try:
+            validate_email(correo)
+        except ValidationError:
+            return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
+
+        # --- Usuario no registrado ---
         try:
             user = usuario.objects.get(Correo=correo)
-            
-            if user.Contraseña == contraseña or check_password(contraseña, user.Contraseña):
-                request.session['user_id'] = user.IdUsuario
-                request.session['username'] = user.NombreUsuario
-                request.session['nombre'] = f"{user.PrimerNombre} {user.PrimerApellido}"
-                request.session['role'] = user.idRol.IdRol  # Store the user's role
-                return redirect('Ladingpage')
-                
         except usuario.DoesNotExist:
-            try:
-                domi = domiciliario.objects.get(Correo=correo)
-                if domi.Contraseña == contraseña or check_password(contraseña, domi.Contraseña):
-                    request.session['user_id'] = domi.IdDomiciliario
-                    request.session['username'] = domi.NombreDomiciliario
-                    request.session['nombre'] = domi.NombreDomiciliario
-                    request.session['role'] = 2  # Role for domiciliario
-                    return redirect('Ladingpage')
-            except domiciliario.DoesNotExist:
-                pass
+            return render(request, 'login/login.html', {'error': 'Usuario no encontrado'})
 
-        return render(request, 'login/login.html', {'error': 'Credenciales inválidas'})
-    
+        # --- Contraseña incorrecta ---
+        if not (user.Contraseña == contraseña or check_password(contraseña, user.Contraseña)):
+            intentos += 1
+            request.session['login_intentos'] = intentos
+            if intentos >= max_intentos:
+                request.session['login_bloqueado'] = True
+                return render(request, 'login/login.html', {'error': 'Cuenta bloqueada temporalmente'})
+            return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
+
+        # --- Login exitoso ---
+        request.session['user_id'] = user.IdUsuario
+        request.session['username'] = user.NombreUsuario
+        request.session['nombre'] = f"{user.PrimerNombre} {user.PrimerApellido}"
+        request.session['role'] = user.idRol.IdRol
+        request.session['login_intentos'] = 0
+        request.session['login_bloqueado'] = False
+        return redirect('Ladingpage')
+
     return render(request, 'login/login.html')
 
 
@@ -511,42 +513,91 @@ def borrardomiciliario(request, id_domiciliario):
 
 
 #region productos
+def validar_nombre_producto(nombre):
+    if not nombre or not nombre.strip():
+        return "El nombre es obligatorio."
+    if re.search(r'[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s]', nombre):
+        return "Nombre inválido: no se permiten caracteres especiales."
+    return None
 
 def insertarproducto(request):
     if request.method == "POST":
-        if (request.POST.get('Nombre') and request.POST.get('Descripcion') and
-            request.POST.get('Precio') and request.POST.get('Cantidad') and
-            request.POST.get('FechaVence') and request.POST.get('IdSubCategoria')):
-            
-            nuevo_producto = producto(
-                Nombre=request.POST.get('Nombre'),
-                Descripcion=request.POST.get('Descripcion'),
-                Precio=request.POST.get('Precio'),
-                Cantidad=request.POST.get('Cantidad'),
-                FechaVence=request.POST.get('FechaVence'),
-                IdSubCategoria=subcategoria.objects.get(IdSubCategoria=request.POST.get('IdSubCategoria')),
-                Img=request.FILES.get('Img')
-            )
-            nuevo_producto.save()
+        nombre = request.POST.get('Nombre', '').strip()
+        descripcion = request.POST.get('Descripcion', '').strip()
+        precio = request.POST.get('Precio')
+        cantidad = request.POST.get('Cantidad')
+        fecha_vence = request.POST.get('FechaVence')
+        id_subcategoria = request.POST.get('IdSubCategoria')
+        img = request.FILES.get('Img')
+
+        # Validaciones
+        error = validar_nombre_producto(nombre)
+        if error:
+            messages.error(request, error)
             return redirect('crudProductos')
+        if not id_subcategoria:
+            messages.error(request, "La subcategoría es obligatoria.")
+            return redirect('crudProductos')
+        # Duplicado: mismo nombre y subcategoría
+        if producto.objects.filter(Nombre__iexact=nombre, IdSubCategoria_id=id_subcategoria).exists():
+            messages.error(request, "Ya existe un producto con ese nombre en la misma subcategoría.")
+            return redirect('crudProductos')
+
+        # Crear producto
+        nuevo_producto = producto(
+            Nombre=nombre,
+            Descripcion=descripcion,
+            Precio=precio,
+            Cantidad=cantidad,
+            FechaVence=fecha_vence,
+            IdSubCategoria=subcategoria.objects.get(IdSubCategoria=id_subcategoria),
+            Img=img
+        )
+        nuevo_producto.save()
+        messages.success(request, "Producto registrado exitosamente")
+        return redirect('crudProductos')
     return render(request, 'crud/productos.html')
 
 def editarproducto(request, id_producto):
     producto_obj = get_object_or_404(producto, IdProducto=id_producto)
     if request.method == "POST":
-        producto_obj.Nombre = request.POST.get('Nombre')
-        producto_obj.Descripcion = request.POST.get('Descripcion')
-        producto_obj.Precio = request.POST.get('Precio')
-        producto_obj.Cantidad = request.POST.get('Cantidad')
-        producto_obj.FechaVence = request.POST.get('FechaVence')
-        if request.POST.get('IdSubCategoria'):
-            producto_obj.IdSubCategoria = subcategoria.objects.get(IdSubCategoria=request.POST.get('IdSubCategoria'))
-        if request.FILES.get('Img'):
-            producto_obj.Img = request.FILES.get('Img')
+        nombre = request.POST.get('Nombre', '').strip()
+        descripcion = request.POST.get('Descripcion', '').strip()
+        precio = request.POST.get('Precio')
+        cantidad = request.POST.get('Cantidad')
+        fecha_vence = request.POST.get('FechaVence')
+        id_subcategoria = request.POST.get('IdSubCategoria')
+        img = request.FILES.get('Img')
+
+        # Validaciones
+        error = validar_nombre_producto(nombre)
+        if error:
+            messages.error(request, error)
+            return redirect('crudProductos')
+        if not id_subcategoria:
+            messages.error(request, "La subcategoría es obligatoria.")
+            return redirect('crudProductos')
+        # Duplicado: mismo nombre y subcategoría, excluyendo el actual
+        if producto.objects.filter(
+            Nombre__iexact=nombre,
+            IdSubCategoria_id=id_subcategoria
+        ).exclude(IdProducto=id_producto).exists():
+            messages.error(request, "Ya existe un producto con ese nombre en la misma subcategoría.")
+            return redirect('crudProductos')
+
+        # Actualizar producto
+        producto_obj.Nombre = nombre
+        producto_obj.Descripcion = descripcion
+        producto_obj.Precio = precio
+        producto_obj.Cantidad = cantidad
+        producto_obj.FechaVence = fecha_vence
+        producto_obj.IdSubCategoria = subcategoria.objects.get(IdSubCategoria=id_subcategoria)
+        if img:
+            producto_obj.Img = img
         producto_obj.save()
+        messages.success(request, "Producto modificado exitosamente")
         return redirect('crudProductos')
     return render(request, 'crud/editar_producto.html', {'producto': producto_obj})
-
 def borrarproducto(request, id_producto):
     producto_obj = get_object_or_404(producto, IdProducto=id_producto)
     producto_obj.delete()
@@ -590,8 +641,6 @@ def guardar_calificacion(request):
     return JsonResponse({'success': False, 'mensaje': 'Método no permitido'})
 
     
-#endregion
-
 
 # region perfiles
 def perfiles(request):
