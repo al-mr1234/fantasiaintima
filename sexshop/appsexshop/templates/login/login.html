@@ -50,6 +50,10 @@
 
       <button type="submit" class="form-btn">Iniciar sesión</button>
 
+      {% if error %}
+        <p style="color:red;">{{ error }}</p>
+      {% endif %}
+
     </form>
 
     <!-- Enlace para registro -->

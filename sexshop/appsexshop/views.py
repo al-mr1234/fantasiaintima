@@ -14,6 +14,7 @@ from django.db import IntegrityError
 import re
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 
 
 def LadingPage(request):
@@ -28,26 +29,54 @@ def LadingPage(request):
     return render(request, 'LadingPage.html', {
         'categorias': categorias,
         'productos_agrupados': productos_agrupados,
-        'productos': productos,  # <-- AGREGA ESTA LÍNEA
+        'productos': productos, 
         'username': request.session.get('username', ''),
         'first_name': request.session.get('first_name', ''),
     })
 
 
 #region categorias
+
+def validar_nombre_categoria(nombre):
+    nombre = nombre.strip()
+    if not nombre:
+        return False, "El nombre no puede estar vacío."
+    if len(nombre) > 80:
+        return False, "Nombre demasiado largo. Máximo 80 caracteres."
+    if not re.match(r"^[\w\sáéíóúÁÉÍÓÚñÑ-]+$", nombre):
+        return False, "El nombre contiene caracteres inválidos."
+    return True, None
+
 def insertarcategorias(request):
     if request.method == "POST":
         if request.POST.get('NombreCategoria'):
-            insertar = connection.cursor()
-            insertar.execute("CALL insertarcategorias(%s)", [request.POST.get('NombreCategoria')])
+            nombre = request.POST.get('NombreCategoria').strip()
+
+            valido, error = validar_nombre_categoria(nombre)
+            if not valido:
+                messages.error(request, error)
+                return redirect("listadocategorias")
+
+            # Comprobar duplicados usando Django ORM
+            if categoria.objects.filter(NombreCategoria__iexact=nombre).exists():
+                messages.error(request, "La categoría ya existe.")
+                return redirect("listadocategorias")
+
+            # Crear la nueva categoría
+            categoria.objects.create(NombreCategoria=nombre)
+            messages.success(request, "Categoría registrada exitosamente.")
             return redirect("listadocategorias")
+
     return render(request, 'listadocategorias')
 
 def listadocategorias(request):
     listado = connection.cursor()
     listado.execute("CALL listadocategorias()")
     categorias = listado.fetchall()
-    return render(request, "crud/categorias.html", {"listado": categorias})
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(categorias, 5) 
+    page_obj = paginator.get_page(page_number)
+    return render(request, "crud/categorias.html", {"page_obj": page_obj})
 
 def borrarcategoria(request, id_categoria):
     try:
@@ -74,9 +103,15 @@ def actualizarcategoria(request, id_categoria):
 
 # region subcategorias
 def listadosubcategorias(request):
-    subcategorias = subcategoria.objects.all()
+    subcategorias_list = subcategoria.objects.all()
     categorias = categoria.objects.all()
-    return render(request, 'crud/subcategorias.html', {'subcategorias': subcategorias, 'categorias': categorias})
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(subcategorias_list, 5)  # 5 subcategorías por página
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'crud/subcategorias.html', {
+        'page_obj': page_obj,
+        'categorias': categorias
+    })
 
 def validar_nombre_subcategoria(nombre):
     if not nombre or not nombre.strip():
@@ -602,7 +637,7 @@ def borrarproducto(request, id_producto):
     producto_obj = get_object_or_404(producto, IdProducto=id_producto)
     producto_obj.delete()
     return redirect('crudProductos') # importa producto con minúscula si así está definido
-
+#endregion
 
 @csrf_exempt
 def guardar_calificacion(request):
@@ -704,8 +739,8 @@ def eliminar_cuenta(request):
         try:
             user = usuario.objects.get(IdUsuario=request.session['user_id'])
             user.delete()  # Delete the user account
-            request.session.flush()  # Clear the session
-            return redirect('Ladingpage')  # Redirect to the landing page
+            request.session.flush() 
+            return redirect('Ladingpage')  
         except usuario.DoesNotExist:
             pass
     return JsonResponse({'status': 'error'}, status=400)
@@ -720,18 +755,30 @@ def crudSubCategorias(request):
     return render(request, 'crud/subcategorias.html', {'subcategorias': subcategorias, 'categorias': categorias})
 
 def crudProductos(request):
-    productos = producto.objects.all()  # Obtener todos los productos
-    subcategorias = subcategoria.objects.all()  # Obtener todas las subcategorías
-    return render(request, 'crud/productos.html', {'productos': productos, 'subcategorias': subcategorias})
+    productos_list = producto.objects.all().order_by('-IdProducto')
+    subcategorias = subcategoria.objects.all()
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(productos_list, 5) 
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'crud/productos.html', {
+        'page_obj': page_obj,
+        'subcategorias': subcategorias
+    })
 
 def crudDomiciliarios(request):
-    domiciliarios = domiciliario.objects.filter(IdRol=2)  
-    return render(request, 'crud/domiciliarios.html', {'domiciliarios': domiciliarios})
+    domiciliarios_list = domiciliario.objects.filter(IdRol=2)
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(domiciliarios_list, 5)  
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'crud/domiciliarios.html', {'page_obj': page_obj})
 
 
 def crudUsuarios(request):
-    usuarios = usuario.objects.filter(idRol=3)  
-    return render(request, 'crud/usuarios.html', {'usuarios': usuarios})
+    usuarios_list = usuario.objects.filter(idRol=3)
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(usuarios_list, 5)  # 5 usuarios por página
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'crud/usuarios.html', {'page_obj': page_obj})
 
 
 def recuperarContraseña(request):
@@ -790,3 +837,5 @@ def dildos(request):
 def productosCarrito(request):
     productos = producto.objects.all().order_by('-IdProducto')  # Obtener todos los productos
     return render(request, 'carrito/productos.html', {'productos': productos})
+
+

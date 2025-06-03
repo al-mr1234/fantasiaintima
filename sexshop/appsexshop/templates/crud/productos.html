@@ -28,8 +28,10 @@
   <link id="pagestyle" href="{% static 'css/argon-dashboard.css?v=2.0.4' %}" rel="stylesheet" />
 </head>
 
-<body class="g-sidenav-show   bg-gray-100">
-  
+<body class="g-sidenav-show   bg-gray-100 ">
+
+
+
   <aside class="sidenav bg-white navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-4 " id="sidenav-main">
     <div class="sidenav-header">
       <i class="fas fa-times p-3 cursor-pointer text-secondary opacity-5 position-absolute end-0 top-0 d-none d-xl-none" aria-hidden="true" id="iconSidenav"></i>
@@ -145,6 +147,17 @@
                 <div class="container">
                     <h4 class="card-title" style="text-align: center; color: black;">Gestión de Productos</h4>
 
+                      {% if messages %}
+                        <div class="mt-3 ms-5" style="max-width: 500px;"></div>
+                          {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                              {{ message }}
+                              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                          {% endfor %}
+                        </div>
+                      {% endif %}
+
                     <!-- Botón para abrir el modal de creación de producto -->
                     <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalRegistrarProducto">
                         Crear
@@ -222,7 +235,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for producto in productos %}
+                            {% for producto in page_obj %}
                             <tr>
                                 <th scope="row">{{ producto.IdProducto }}</th>
                                 <td>{{ producto.Nombre }}</td>
@@ -235,9 +248,6 @@
                                     <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEditarProducto{{ producto.IdProducto }}">
                                         Editar
                                     </button>
-
-
-                                    
                                     <a class="btn btn-link text-danger" href="{% url 'borrarproducto' producto.IdProducto %}">
                                         <i class="far fa-trash-alt me-2"></i>Eliminar
                                     </a>
@@ -311,6 +321,60 @@
                             {% endfor %}
                         </tbody>
                     </table>
+
+                    <!-- Controles de paginación -->
+<nav aria-label="Page navigation">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Anterior">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">&laquo;</span>
+      </li>
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+      {% else %}
+        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+      {% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Siguiente">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">&raquo;</span>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+
+<style>
+/* Cambia el color del botón de paginación activo y los círculos a rojo */
+.pagination .page-item.active .page-link {
+    background-color: #f53b57 !important;
+    border-color: #f53b57 !important;
+    color: #fff !important;
+    box-shadow: 0 4px 14px 0 rgba(245,59,87,0.15);
+}
+.pagination .page-link {
+    color: #f53b57;
+    border-radius: 50% !important;
+    margin: 0 2px;
+    border: none;
+}
+.pagination .page-item .page-link:focus {
+    box-shadow: 0 0 0 0.2rem rgba(245,59,87,0.25);
+}
+</style>
                 </div>
                 <script>
                     function filterProducts() {
@@ -466,13 +530,3 @@
 
 </html>
 
-{% if messages %}
-  <div>
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}
