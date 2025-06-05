@@ -179,7 +179,7 @@
                       <div class="modal-body">
                           <div class="mb-3">
                               <label for="formGroupExampleInput" class="form-label">Nombre Categoría</label>
-                              <input type="text" class="form-control" id="formGroupExampleInput" name="NombreCategoria" placeholder="">
+                              <input type="text" class="form-control" id="formGroupExampleInput" name="NombreCategoria" placeholder="" required>
                           </div>
                       </div>
                       <div class="modal-footer">
@@ -201,47 +201,21 @@
               </tr>
           </thead>
           <tbody>
-              {% for p in page_obj %}
-              <tr>
-                  <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
-                  <td>{{ p.1 }}</td>
-                  <td>
-                      <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEditar{{ p.0 }}">
-                          Editar
-                      </button>
-      
-                      <!-- Modal Editar -->
-                      <div class="modal fade" id="modalEditar{{ p.0 }}" tabindex="-1" aria-labelledby="modalEditarLabel{{ p.0 }}" aria-hidden="true">
-                          <div class="modal-dialog">
-                              <div class="modal-content">
-                                  <div class="modal-header">
-                                      <h1 class="modal-title fs-5" id="modalEditarLabel{{ p.0 }}">¡EDITAR CATEGORÍA!</h1>
-                                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                  </div>
-      
-                                  <form method="POST" action="{% url 'actualizarcategoria' p.0 %}">
-                                      {% csrf_token %}
-                                      <div class="modal-body">
-                                          <div class="mb-3">
-                                              <label for="formGroupExampleInput" class="form-label">Nombre Categoría</label>
-                                              <input type="text" class="form-control" id="formGroupExampleInput" name="NombreCategoria" value="{{ p.1 }}">
-                                          </div>
-                                      </div>
-                                      <div class="modal-footer">
-                                          <button type="button" class="btn btn-black" data-bs-dismiss="modal">Cerrar</button>
-                                          <button type="submit" class="btn btn-danger">Actualizar categoría</button>
-                                      </div>
-                                  </form>
-                              </div>
-                          </div>
-                      </div>
-                  </td>
-      
-                  <!-- Botón Eliminar -->
-                  <td><a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarcategoria' p.0 %}"><i class="far fa-trash-alt me-2"></i>Eliminar</a></td>
-              </tr>
-              {% endfor %}
-          </tbody>
+        {% for p in page_obj %}
+        <tr>
+            <td>{{ p.0 }}</td>
+            <td>{{ p.1 }}</td>
+            <td>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEditar{{ p.0 }}">
+                    Editar
+                </button>
+                <!-- Modal Editar -->
+                <!-- ...modal code... -->
+            </td>
+            <td><a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarcategoria' p.0 %}"><i class="far fa-trash-alt me-2"></i>Eliminar</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
       </table>
 
       <!-- Controles de paginación -->
@@ -343,7 +317,6 @@
       Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
     }
   </script>
-  <!-- Github buttons -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>
   <!-- Control Center for Soft Dashboard: parallax effects, scripts for the example pages etc -->
   <script src="{% static 'js/argon-dashboard.min.js?v=2.0.4' %}"></script>

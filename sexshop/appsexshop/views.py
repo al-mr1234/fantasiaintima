@@ -73,6 +73,8 @@ def listadocategorias(request):
     listado = connection.cursor()
     listado.execute("CALL listadocategorias()")
     categorias = listado.fetchall()
+    # Ordenar por ID (índice 0) en orden descendente
+    categorias = sorted(categorias, key=lambda x: x[0], reverse=True)
     page_number = request.GET.get('page', 1)
     paginator = Paginator(categorias, 5) 
     page_obj = paginator.get_page(page_number)
@@ -103,10 +105,10 @@ def actualizarcategoria(request, id_categoria):
 
 # region subcategorias
 def listadosubcategorias(request):
-    subcategorias_list = subcategoria.objects.all()
+    subcategorias_list = subcategoria.objects.all().order_by('-IdSubCategoria')
     categorias = categoria.objects.all()
     page_number = request.GET.get('page', 1)
-    paginator = Paginator(subcategorias_list, 5)  # 5 subcategorías por página
+    paginator = Paginator(subcategorias_list, 5)
     page_obj = paginator.get_page(page_number)
     return render(request, 'crud/subcategorias.html', {
         'page_obj': page_obj,
@@ -127,16 +129,16 @@ def insertarsubcategoria(request):
         error = validar_nombre_subcategoria(nombre)
         if error:
             messages.error(request, error)
-            return redirect('crudSubCategorias')
+            return redirect('listadosubcategorias')  # <--- aquí
         # Duplicado
         if subcategoria.objects.filter(NombresubCategoria__iexact=nombre, categoria_id=categoria_id).exists():
             messages.error(request, "Subcategoría ya existe")
-            return redirect('crudSubCategorias')
+            return redirect('listadosubcategorias')  # <--- aquí
         nueva_subcategoria = subcategoria(NombresubCategoria=nombre, categoria_id=categoria_id)
         nueva_subcategoria.save()
         messages.success(request, "Subcategoría registrada exitosamente")
-        return redirect('crudSubCategorias')
-    return redirect('crudSubCategorias')
+        return redirect('listadosubcategorias')  # <--- aquí
+    return redirect('listadosubcategorias')  # <--- aquí
 
 def actualizarsubcategoria(request, id_subcategoria):
     subcat = get_object_or_404(subcategoria, IdSubCategoria=id_subcategoria)
@@ -766,17 +768,17 @@ def crudProductos(request):
     })
 
 def crudDomiciliarios(request):
-    domiciliarios_list = domiciliario.objects.filter(IdRol=2)
+    domiciliarios_list = domiciliario.objects.filter(IdRol=2).order_by('-IdDomiciliario')
     page_number = request.GET.get('page', 1)
-    paginator = Paginator(domiciliarios_list, 5)  
+    paginator = Paginator(domiciliarios_list, 5)
     page_obj = paginator.get_page(page_number)
     return render(request, 'crud/domiciliarios.html', {'page_obj': page_obj})
 
 
 def crudUsuarios(request):
-    usuarios_list = usuario.objects.filter(idRol=3)
+    usuarios_list = usuario.objects.filter(idRol=3).order_by('-IdUsuario')
     page_number = request.GET.get('page', 1)
-    paginator = Paginator(usuarios_list, 5)  # 5 usuarios por página
+    paginator = Paginator(usuarios_list, 5)
     page_obj = paginator.get_page(page_number)
     return render(request, 'crud/usuarios.html', {'page_obj': page_obj})
 

@@ -205,62 +205,62 @@
   </thead>
   
   <tbody>
-      {% for subcategoria in page_obj %}
-      <tr>
-          <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
-          <td>{{ subcategoria.categoria.NombreCategoria }}</td>
-          <td>{{ subcategoria.NombresubCategoria }}</td>
-          <td>
-              <!-- Botón para abrir el modal de edición -->
-              <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEditarSubcategoria{{ subcategoria.IdSubCategoria }}">
-                  Editar
-              </button>
-              <a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarsubcategoria' subcategoria.IdSubCategoria %}">
-                  <i class="far fa-trash-alt me-2"></i>Eliminar
-              </a>
-          </td>
-      </tr>
+    {% for subcategoria in page_obj %}
+    <tr>
+        <td>{{ subcategoria.IdSubCategoria }}</td>
+        <td>{{ subcategoria.categoria.NombreCategoria }}</td>
+        <td>{{ subcategoria.NombresubCategoria }}</td>
+        <td>
+            <!-- Botón para abrir el modal de edición -->
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEditarSubcategoria{{ subcategoria.IdSubCategoria }}">
+                Editar
+            </button>
+            <a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarsubcategoria' subcategoria.IdSubCategoria %}">
+                <i class="far fa-trash-alt me-2"></i>Eliminar
+            </a>
+        </td>
+    </tr>
 
-      <!-- Modal para editar una subcategoría -->
-      <div class="modal fade" id="modalEditarSubcategoria{{ subcategoria.IdSubCategoria }}" tabindex="-1" aria-labelledby="modalEditarSubcategoriaLabel{{ subcategoria.IdSubCategoria }}" aria-hidden="true">
-          <div class="modal-dialog">
-              <div class="modal-content">
-                  <div class="modal-header">
-                      <h1 class="modal-title fs-5" id="modalEditarSubcategoriaLabel{{ subcategoria.IdSubCategoria }}">¡EDITAR Sub-CATEGORÍA!</h1>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                  </div>
-                  <div class="modal-body">
-                      <!-- Formulario para editar subcategoría -->
-                      <form method="POST" action="{% url 'actualizarsubcategoria' subcategoria.IdSubCategoria %}">
-                          {% csrf_token %}
-                          <div class="mb-3">
-                              <label for="inputState" class="form-label">Elige La Categoría</label>
-                              <select id="inputState" name="categoria_id" class="form-select">
-                                  <option disabled>Selecciona una categoría</option>
-                                  {% for categoria in categorias %}
-                                      <option value="{{ categoria.IdCategoria }}" {% if subcategoria.categoria.IdCategoria == categoria.IdCategoria %}selected{% endif %}>
-                                          {{ categoria.NombreCategoria }}
-                                      </option>
-                                  {% endfor %}
-                              </select>
-                          </div>
-                          
-                          <div class="mb-3">
-                              <label for="formGroupExampleInput" class="form-label">Nombre Sub-Categoría</label>
-                              <input type="text" class="form-control" id="formGroupExampleInput" name="nombre" value="{{ subcategoria.NombresubCategoria }}">
-                          </div>
-                  </div>
-                  <div class="modal-footer">
-                      <button type="button" class="btn btn-black" data-bs-dismiss="modal">Cerrar</button>
-                      <button type="submit" class="btn btn-danger">Actualizar Sub-categoría</button>
-                  </div>
-                      </form>
-              </div>
-          </div>
-      </div>
+    <!-- Modal para editar una subcategoría -->
+    <div class="modal fade" id="modalEditarSubcategoria{{ subcategoria.IdSubCategoria }}" tabindex="-1" aria-labelledby="modalEditarSubcategoriaLabel{{ subcategoria.IdSubCategoria }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="modalEditarSubcategoriaLabel{{ subcategoria.IdSubCategoria }}">¡EDITAR Sub-CATEGORÍA!</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Formulario para editar subcategoría -->
+                    <form method="POST" action="{% url 'actualizarsubcategoria' subcategoria.IdSubCategoria %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="inputState" class="form-label">Elige La Categoría</label>
+                            <select id="inputState" name="categoria_id" class="form-select">
+                                <option disabled>Selecciona una categoría</option>
+                                {% for categoria in categorias %}
+                                    <option value="{{ categoria.IdCategoria }}" {% if subcategoria.categoria.IdCategoria == categoria.IdCategoria %}selected{% endif %}>
+                                        {{ categoria.NombreCategoria }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="formGroupExampleInput" class="form-label">Nombre Sub-Categoría</label>
+                            <input type="text" class="form-control" id="formGroupExampleInput" name="nombre" value="{{ subcategoria.NombresubCategoria }}">
+                        </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-black" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-danger">Actualizar Sub-categoría</button>
+                </div>
+                    </form>
+            </div>
+        </div>
+    </div>
 
-      {% endfor %}
-  </tbody>
+    {% endfor %}
+</tbody>
 </table>
 
 <!-- Controles de paginación -->

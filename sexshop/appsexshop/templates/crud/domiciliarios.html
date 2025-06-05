@@ -60,7 +60,7 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link " href="{% url 'crudSubCategorias' %}">
+          <a class="nav-link " href="{% url 'listadosubcategorias' %}">
             <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
                 <i class="fa-solid fa-plus text-danger text-sm opacity-10"></i>
             </div>
@@ -228,7 +228,7 @@
   <tbody>
     {% for domiciliario in page_obj %}
     <tr>
-      <td>{{ forloop.counter }}</td>
+      <td>{{ domiciliario.IdDomiciliario }}</td>
       <td>{{ domiciliario.TipoDocumento }}</td>
       <td>{{ domiciliario.Documento }}</td>
       <td>{{ domiciliario.NombreDomiciliario }}</td>
@@ -242,13 +242,11 @@
         <button  type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEditarDomiciliario{{ domiciliario.IdDomiciliario }}">
           Editar
         </button>
-
         <a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrardomiciliario' domiciliario.IdDomiciliario %}">
           Eliminar
         </a>
       </td>
     </tr>
-
     <!-- Modal para editar domiciliario -->
     <div class="modal fade" id="modalEditarDomiciliario{{ domiciliario.IdDomiciliario }}" tabindex="-1" aria-labelledby="modalEditarDomiciliarioLabel{{ domiciliario.IdDomiciliario }}" aria-hidden="true">
       <div class="modal-dialog">
