@@ -93,21 +93,6 @@ class CodigoVerificacion(models.Model):
     def __str__(self):
         return f"Código para {self.usuario.Correo}"
     
-class carritocompras(models.Model):
-    codigo_pedido = models.CharField(max_length=100)
-    cantidad = models.PositiveIntegerField()
-    precio = models.DecimalField(max_digits=10, decimal_places=2)
-    producto = models.ForeignKey('Producto', on_delete=models.CASCADE)
-    precio_total = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    estado = models.CharField(max_length=50)
-    fecha_inicio = models.DateTimeField(auto_now_add=True)
-    fecha_compra = models.DateTimeField(blank=True, null=True)
-
-    def save(self):
-        self.precio_total = self.cantidad * self.precio
-        return super().save()
-
-
     @classmethod
     def generar_codigo(cls, usuario_obj):
         if not isinstance(usuario_obj, usuario):
@@ -132,3 +117,20 @@ class carritocompras(models.Model):
     def es_valido(self):
         return not self.utilizado and timezone.now() < self.fecha_expiracion
 
+    
+class carritocompras(models.Model):
+    codigo_pedido = models.CharField(max_length=100)
+    cantidad = models.PositiveIntegerField()
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
+    producto = models.ForeignKey('Producto', on_delete=models.CASCADE)
+    precio_total = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    estado = models.CharField(max_length=50)
+    fecha_inicio = models.DateTimeField(auto_now_add=True)
+    fecha_compra = models.DateTimeField(blank=True, null=True)
+
+    def save(self):
+        self.precio_total = self.cantidad * self.precio
+        return super().save()
+
+
+   

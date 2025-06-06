@@ -158,7 +158,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587 #es el que utiliza el protocolo smtp
 EMAIL_HOST_USER = 'store.fantasia.intima@gmail.com'
-EMAIL_HOST_PASSWORD = ''
+EMAIL_HOST_PASSWORD = 'mrdz aema ouvd tcts'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 
