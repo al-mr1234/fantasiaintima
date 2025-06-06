@@ -1,5 +1,6 @@
 body{
   background-color:#f8f9fa;
+  font-family: Arial, sans-serif;
 }
 /*titulos*/
 .container a{
@@ -95,6 +96,63 @@ thead{
   z-index: 1;
 }
 
+/* streper */
+.stepper-container {
+      max-width: 850px;
+      margin: 50px auto; /* Centrado horizontal y separación superior */
+      padding: 20px;
+    }
+
+.stepper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+.step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      flex: 1;
+    }
+
+.step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 15px;
+      right: -50%;
+      width: 100%;
+      height: 2px;
+      background-color: #555;
+      z-index: 0;
+    }
+
+.step-icon {
+      background-color: #2d2d2d;
+      border: 2px solid #555;
+      color: #fff;
+      border-radius: 50%;
+      padding: 10px;
+      font-size: 18px;
+      z-index: 1;
+    }
+
+.step.active .step-icon {
+      background-color: #f5365c;
+      border-color: #f5365c;
+    }
+
+.step.completed .step-icon {
+      background-color: #4caf50;
+      border-color: #4caf50;
+    }
+
+.step-text {
+      margin-top: 8px;
+      font-size: 14px;
+      text-align: center;
+    }
 
 
 /* boton flotante */
