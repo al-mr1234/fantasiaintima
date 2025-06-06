@@ -132,7 +132,7 @@ AUTHENTICATION_BACKENDS = (
 
 # Reemplaza con tus claves reales de Google OAuth
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = ''
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = ''
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = ''   
 
 # Clave por defecto para modelos
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

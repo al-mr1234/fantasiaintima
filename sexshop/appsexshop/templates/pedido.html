@@ -147,8 +147,22 @@
     </div>
 </div>
 
-<!-- Botón de Ayuda -->
-<button class="btn aleja btn-help" onclick="pedirAyuda()">¿Necesitas Ayuda?</button>
+<!-- SPEED DIAL -->
+<div class="speed-dial">
+  <div class="speed-dial-actions" id="speedActions">
+    <button class="action-button" title="Compartir"><i class="fa-brands fa-whatsapp" style="color: black;"></i></button>
+    <button class="action-button" title="Imprimir"><i class="fa-brands fa-instagram" style="color: black;"  ></i></button>
+    <button class="action-button" title="Descargar"><i class="fa-brands fa-facebook-f" style="color: black;"></i></button>
+  </div>
+
+  <button class="fab" onclick="toggleSpeedDial()">
+    <span class="plus">+</span>
+  </button>
+</div>
+
+
+
+
 
 <!-- Bootstrap JS, jQuery y Popper.js -->
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -218,6 +232,15 @@
         alert('Un agente se pondrá en contacto contigo pronto.');
         // Aquí agregarías la lógica para solicitar ayuda
     }
+
+      function toggleSpeedDial() {
+    const actions = document.getElementById('speedActions');
+    if (actions.style.display === 'flex') {
+      actions.style.display = 'none';
+    } else {
+      actions.style.display = 'flex';
+    }
+  }
 </script>
 </body>
 </html>

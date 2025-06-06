@@ -95,83 +95,62 @@ thead{
   z-index: 1;
 }
 
-/* streper */
-  body {
-      font-family: Arial, sans-serif;
-    }
-
-    .stepper-container {
-      max-width: 850px;
-      margin: 50px auto; /* Centrado horizontal y separación superior */
-      padding: 20px;
-    }
-
-    .stepper {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-      flex: 1;
-    }
-
-    .step:not(:last-child)::after {
-      content: "";
-      position: absolute;
-      top: 15px;
-      right: -50%;
-      width: 100%;
-      height: 2px;
-      background-color: #555;
-      z-index: 0;
-    }
-
-    .step-icon {
-      background-color: #2d2d2d;
-      border: 2px solid #555;
-      color: #fff;
-      border-radius: 50%;
-      padding: 10px;
-      font-size: 18px;
-      z-index: 1;
-    }
-
-    .step.active .step-icon {
-      background-color: #f5365c;
-      border-color: #f5365c;
-    }
-
-    .step.completed .step-icon {
-      background-color: #4caf50;
-      border-color: #4caf50;
-    }
-
-    .step-text {
-      margin-top: 8px;
-      font-size: 14px;
-      text-align: center;
-    }
 
 
-  
+/* boton flotante */
+ .speed-dial {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1000;
+}
+
+.fab {
+  background-color: #f5365c;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
 
 
+.speed-dial-actions {
+  display: none;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
 
+.action-button {
+  background-color: #00000023;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
 
+.action-button:focus {
+  outline: none;
+}
 
+.fab:focus {
+  outline: none;
+}
 
-
-  
-
-
-
-
-
-
-
-
+.action-button:hover {
+  transform: scale(1.1);  
+  border-color: white;
+}
