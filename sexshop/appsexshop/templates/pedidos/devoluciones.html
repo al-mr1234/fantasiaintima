@@ -1,0 +1,248 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestiona Tu Devolución</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.3/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="{% static 'css/devoluciones.css' %}">
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="card shadow">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex align-items-center">
+                    <a href="#" class="text-dark me-3"><i class="fas fa-arrow-left"></i></a>
+                    <h2 class="card-title mb-0 text-center flex-grow-1">Gestiona Tu Devolución</h2>
+                </div>
+                <div class="input-group mt-3">
+                    <input type="text" class="form-control" placeholder="Buscar" aria-label="Buscar">
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="text-center fw-bold">"Aquí puedes ver el estado de tus devoluciones y gestionar tus solicitudes."</p>
+                
+                <div class="text-end mb-4">
+                    <button id="btnSolicitarDevolucion" class="btn btn-primary-custom rounded-pill px-4 py-2">
+                        Solicitar devolución
+                    </button>
+                </div>
+                
+                <h4 class="mb-3">Tus devoluciones</h4>
+                
+                <div id="listaVacia" class="text-center py-5">
+                    <p class="text-muted">No has hecho ninguna devolución</p>
+                </div>
+                
+                <div id="listaDevoluciones" class="d-none">
+                    <!-- Las devoluciones se cargarán dinámicamente aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Solicitar Devolución -->
+    <div class="modal fade" id="modalDevolucion" tabindex="-1" aria-labelledby="modalDevolucionLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalDevolucionLabel">Solicitar Devolución</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formDevolucion" novalidate>
+                        <div class="mb-3">
+                            <label for="pedido" class="form-label">Selecciona el pedido *</label>
+                            <select class="form-select" id="pedido" required>
+                                <option value="" selected disabled>Seleccionar pedido...</option>
+                                <option value="1">Pedido #12345 - 01/05/2025</option>
+                                <option value="2">Pedido #12346 - 15/04/2025</option>
+                                <option value="3">Pedido #12347 - 28/03/2025</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Por favor selecciona un pedido
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="productos" class="form-label">Selecciona los productos a devolver *</label>
+                            <select class="form-select" id="productos" multiple required disabled>
+                                <!-- Los productos se cargarán dinámicamente según el pedido seleccionado -->
+                            </select>
+                            <div class="invalid-feedback">
+                                Por favor selecciona al menos un producto
+                            </div>
+                            <small class="form-text text-muted">Mantén presionada la tecla Ctrl (o Cmd en Mac) para seleccionar múltiples productos</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="motivo" class="form-label">Motivo de la devolución *</label>
+                            <select class="form-select" id="motivo" required>
+                                <option value="" selected disabled>Seleccionar motivo...</option>
+                                <option value="defectuoso">Producto defectuoso</option>
+                                <option value="dañado">Producto dañado en tránsito</option>
+                                <option value="equivocado">Producto equivocado</option>
+                                <option value="incompleto">Pedido incompleto</option>
+                                <option value="arrepentimiento">Ya no lo necesito</option>
+                                <option value="otro">Otro motivo</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Por favor selecciona un motivo
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="cantidad" class="form-label">Cantidad a devolver *</label>
+                            <input type="number" class="form-control" id="cantidad" min="1" value="1" required>
+                            <div class="invalid-feedback">
+                                Por favor indica la cantidad
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label">Descripción adicional del problema</label>
+                            <textarea class="form-control" id="descripcion" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">¿El producto fue abierto/usado? *</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="abierto" id="abiertoSi" value="si" required>
+                                <label class="form-check-label" for="abiertoSi">
+                                    Sí
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="abierto" id="abiertoNo" value="no">
+                                <label class="form-check-label" for="abiertoNo">
+                                    No
+                                </label>
+                            </div>
+                            <div class="invalid-feedback">
+                                Por favor selecciona una opción
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">¿El producto está en su empaque original? *</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="empaque" id="empaqueSi" value="si" required>
+                                <label class="form-check-label" for="empaqueSi">
+                                    Sí
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="empaque" id="empaqueNo" value="no">
+                                <label class="form-check-label" for="empaqueNo">
+                                    No
+                                </label>
+                            </div>
+                            <div class="invalid-feedback">
+                                Por favor selecciona una opción
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="evidencia" class="form-label">Evidencia (si aplica)</label>
+                            <input class="form-control" type="file" id="evidencia" multiple accept="image/*">
+                            <small class="form-text text-muted">Recomendable si hay daños o problemas visibles</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="preferencia" class="form-label">Preferencia de resolución ¿Qué deseas hacer? *</label>
+                            <select class="form-select" id="preferencia" required>
+                                <option value="" selected disabled>Seleccionar preferencia...</option>
+                                <option value="reemplazo">Reemplazo del producto</option>
+                                <option value="reembolso">Reembolso</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Por favor selecciona una preferencia
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="direccion" class="form-label">Dirección de recogida o envío (si aplica)</label>
+                            <textarea class="form-control" id="direccion" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terminos" required>
+                                <label class="form-check-label" for="terminos">
+                                    He leído y acepto los <a href="#" id="enlaceTerminos">términos y condiciones</a> de la política de devoluciones
+                                </label>
+                                <div class="invalid-feedback">
+                                    Debes aceptar los términos y condiciones
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            <button type="submit" class="btn btn-primary">Enviar solicitud</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Términos y Condiciones -->
+    <div class="modal fade" id="modalTerminos" tabindex="-1" aria-labelledby="modalTerminosLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTerminosLabel">Términos y Condiciones de Devoluciones</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Al solicitar una devolución, usted acepta los siguientes términos:</p>
+                    <ul>
+                        <li>Las devoluciones deben realizarse dentro de los 30 días posteriores a la recepción del producto.</li>
+                        <li>Los productos deben estar en su estado original siempre que sea posible.</li>
+                        <li>El reembolso se procesará dentro de los 10 días hábiles siguientes a la recepción del producto devuelto.</li>
+                        <li>Los gastos de envío por devolución podrían correr por cuenta del cliente dependiendo del motivo de devolución.</li>
+                        <li>Nos reservamos el derecho de rechazar devoluciones que no cumplan con nuestras políticas.</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="btnAceptarTerminos">Aceptar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ver Solicitud -->
+    <div class="modal fade" id="modalVerSolicitud" tabindex="-1" aria-labelledby="modalVerSolicitudLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalVerSolicitudLabel">Detalle de la Solicitud</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="detallesSolicitud">
+                    <!-- Los detalles se cargarán dinámicamente aquí -->
+                </div>
+                <div class="modal-footer">
+                    <div class="alert alert-info w-100 mb-0">
+                        Tu solicitud está en proceso.
+                    </div>
+                    <button type="button" class="btn btn-secondary mt-2" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.3/dist/sweetalert2.all.min.js"></script>
+    <script src="{% static 'js/devoluciones.js' %}"></script>
+</body>
+</html>
