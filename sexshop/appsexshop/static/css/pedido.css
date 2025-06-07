@@ -45,6 +45,14 @@
 
   /*boton*/
 
+  @media (max-width: 776px) {
+  .table td .btn {
+    display: block;
+    width: 100%;
+    margin-bottom: 5px;
+  }
+}
+
   .btn{
     background-color:  #f5365c;
     color: white;
@@ -118,7 +126,7 @@
 
   /* estados del pedido */
   .stepper-container {
-        max-width: 850px;
+        max-width: 850px; 
         margin: 50px auto; /* Centrado horizontal y separación superior */
         padding: 20px;
       }
