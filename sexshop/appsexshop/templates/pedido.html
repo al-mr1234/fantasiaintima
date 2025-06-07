@@ -149,20 +149,20 @@
     </div>
 </div>
 
-<!-- SPEED DIAL -->
-<div class="speed-dial">
+<!-- SPEED DIAL - boton flotante -->
+<div class="speed-dial" id="speedDial">
 
   <div class="speed-dial-actions" id="speedActions">
 
-    <a class="action-button" title="Compartir" href=""><i class="fa-brands fa-whatsapp" style="color: black;"></i></a>
+    <a class="action-button"  href=""><i class="fa-brands fa-whatsapp" style="color: black;"></i></a>
 
-    <a class="action-button" title="Imprimir" href="https://www.instagram.com/"><i class="fa-brands fa-instagram" style="color: black;"  ></i></a>
+    <a class="action-button"  href="https://www.instagram.com/"><i class="fa-brands fa-instagram" style="color: black;"  ></i></a>
 
-    <a class="action-button" title="Descargar" href="https://www.facebook.com/?locale=es_LA"><i class="fa-brands fa-facebook-f" style="color: black;"></i></a>
+    <a class="action-button" href="https://www.facebook.com/?locale=es_LA"><i class="fa-brands fa-facebook-f" style="color: black;"></i></a>
 
   </div>
 
-  <button class="fab" onclick="toggleSpeedDial()">
+  <button class="fab">
     <span class="plus">+</span>
   </button>
 </div>
@@ -231,20 +231,19 @@
         }
     }
 
+//boton flotante
+       document.addEventListener('DOMContentLoaded', function () {
+  const speedDial = document.getElementById('speedDial');
+  const speedActions = document.getElementById('speedActions');
 
-    function pedirAyuda() {
-        alert('Un agente se pondrá en contacto contigo pronto.');
-        // Aquí agregarías la lógica para solicitar ayuda
-    }
+  speedDial.addEventListener('mouseenter', () => {
+    speedActions.style.display = 'flex';
+  });
 
-      function toggleSpeedDial() {
-    const actions = document.getElementById('speedActions');
-    if (actions.style.display === 'flex') {
-      actions.style.display = 'none';
-    } else {
-      actions.style.display = 'flex';
-    }
-  }
+  speedDial.addEventListener('mouseleave', () => {
+    speedActions.style.display = 'none';
+  });
+});
 
   //buscador
   document.addEventListener('DOMContentLoaded', function () {

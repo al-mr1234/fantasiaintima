@@ -214,6 +214,7 @@
     display: none;
     flex-direction: column;
     margin-bottom: 10px;
+   transition: 0.10s ease-in-out;
   }
 
   .action-button {
