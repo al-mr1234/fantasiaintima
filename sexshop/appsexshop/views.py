@@ -601,7 +601,6 @@ def nuevaContraseña(request):
     return render(request, 'login/nuevaContraseña.html')
 
 
-
 def carrito(request):
     return render(request, 'carrito/carrito.html')
 
@@ -644,3 +643,6 @@ def dildos(request):
 def productosCarrito(request):
     productos = producto.objects.all().order_by('-IdProducto')  # Obtener todos los productos
     return render(request, 'carrito/productos.html', {'productos': productos})
+
+def devoluciones(request):
+    return render(request, 'pedidos/devoluciones.html' )
