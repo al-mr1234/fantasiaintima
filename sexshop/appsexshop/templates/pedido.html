@@ -66,8 +66,8 @@
             </tr>
             <tr>
                 <td>Pedido 002</td>
-                <td>Juan Pérez</td>
-                <td>2024-09-11</td>
+                <td>Alejandra Marin</td>
+                <td>2025-09-11</td>
                 <td>$250.00</td>
                 
                 <td>
@@ -78,6 +78,11 @@
             <!-- Más filas de pedidos -->
         </tbody>
     </table>
+
+    <div id="noResults" style="text-align:center; margin-top:10px; display:none;">
+    No se encuentra ningún resultado.
+</div>
+
 </div>
 
 <!-- Modal para Detalles del Pedido -->
@@ -149,19 +154,21 @@
 
 <!-- SPEED DIAL -->
 <div class="speed-dial">
+
   <div class="speed-dial-actions" id="speedActions">
-    <button class="action-button" title="Compartir"><i class="fa-brands fa-whatsapp" style="color: black;"></i></button>
-    <button class="action-button" title="Imprimir"><i class="fa-brands fa-instagram" style="color: black;"  ></i></button>
-    <button class="action-button" title="Descargar"><i class="fa-brands fa-facebook-f" style="color: black;"></i></button>
+
+    <a class="action-button" title="Compartir" href=""><i class="fa-brands fa-whatsapp" style="color: black;"></i></a>
+
+    <a class="action-button" title="Imprimir" href="https://www.instagram.com/"><i class="fa-brands fa-instagram" style="color: black;"  ></i></a>
+
+    <a class="action-button" title="Descargar" href="https://www.facebook.com/?locale=es_LA"><i class="fa-brands fa-facebook-f" style="color: black;"></i></a>
+
   </div>
 
   <button class="fab" onclick="toggleSpeedDial()">
     <span class="plus">+</span>
   </button>
 </div>
-
-
-
 
 
 <!-- Bootstrap JS, jQuery y Popper.js -->
@@ -176,7 +183,7 @@
         const pedidos = {
             '1': {
                 cliente: 'Juan Pérez',
-                fecha: '2024-09-10',
+                fecha: '2025-09-10',
                 total: '$150.00',
                 articulos: [
                     { nombre: 'Artículo 1', cantidad: 1, precio: '$50.00', total: '$50.00', Foto: '$210.00' },
@@ -241,6 +248,38 @@
       actions.style.display = 'flex';
     }
   }
+
+  //buscador
+  document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('query');
+        const table = document.querySelector('table');
+        const rows = table.querySelectorAll('tbody tr');
+        const noResults = document.getElementById('noResults');
+
+        searchInput.addEventListener('input', function () {
+            // Elimina espacios y convierte a minúsculas
+               const searchTerm = searchInput.value.toLowerCase().replace(/\s+/g, '').replace(/\//g, '-');
+
+            let anyVisible = false;
+
+            rows.forEach(row => {
+                const idPedido = row.cells[0].textContent.toLowerCase().replace(/\s+/g, '');
+                const cliente = row.cells[1].textContent.toLowerCase().replace(/\s+/g, '');
+                const fecha = row.cells[2].textContent.toLowerCase().replace(/\s+/g, '');
+
+                if (idPedido.includes(searchTerm) || cliente.includes(searchTerm) || fecha.includes(searchTerm)) {
+                    row.style.display = '';
+                    anyVisible = true;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Mostrar mensaje si no hay resultados
+            noResults.style.display = anyVisible ? 'none' : 'block';
+        });
+    });
+
 </script>
 </body>
 </html>

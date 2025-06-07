@@ -96,7 +96,7 @@ thead{
   z-index: 1;
 }
 
-/* streper */
+/* estados del pedido */
 .stepper-container {
       max-width: 850px;
       margin: 50px auto; /* Centrado horizontal y separación superior */
@@ -198,7 +198,18 @@ thead{
   margin-bottom: 10px;
   cursor: pointer;
   transition: transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+.action-button:link,
+.action-button:visited,
+.action-button:hover,
+.action-button:active {
+  text-decoration: none;
+}
+
 
 .action-button:focus {
   outline: none;
