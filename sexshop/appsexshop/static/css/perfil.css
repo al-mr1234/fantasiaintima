@@ -24,6 +24,99 @@ body {
     padding-top: 70px;
 }
 
+
+/*...........*/
+@media screen and (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    align-items: center;
+    height: auto;
+    padding: 20px 15px;
+    width: 95%;
+    box-shadow: none;
+  }
+
+  .formulario {
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .header {
+    margin: 0 auto 20px auto;
+    align-items: center;
+    text-align: center;
+    font-size: 16px;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    grid-template-areas: none;
+  }
+
+  .formulario label {
+    font-size: 16px;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  .contrasena {
+    font-size: 16px;
+    padding: 12px;
+  }
+
+  button,
+  input[type="submit"] {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    margin-bottom: 6px;
+    width: auto;
+    flex: 1;
+  }
+
+  .logo {
+    width: 160px;
+    height: auto;
+  }
+
+  .profile-pic {
+    width: 120px;
+    height: 120px;
+  }
+
+  .input {
+    width: 100%;
+    display: flex;
+  flex-direction: column;
+  align-items:start;
+  width: 100%;
+  }
+
+  .value {
+    justify-content: center;
+    padding: 10px;
+    text-align: center;
+  }
+
+  .brand-name {
+    font-size: 14px;
+  }
+
+  .form-container {
+    margin-top: 20px;
+    width: 100%;
+  }
+  .botonPerfil{
+display: flex;
+justify-content: center;
+  }
+  
+}
+
+/*........................*/
+
 .header {
     align-items: center;
     margin-top: -20px;

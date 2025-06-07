@@ -23,10 +23,10 @@
 <body>
   <div class="container">
     <div class="header">
-      <!-- Sección del perfil -->
-      <div class="profile-section">
-        <div class="profile-container">
 
+      <!-- Sección del perfil -->
+    <div class="profile-section">
+        <div class="profile-container">
           <label for="profile-pic" class="profile-pic-label">
                 <img src="{% static 'img/perfil.png' %}" alt="Profile" id="profile-img" class="profile-pic">
             </label>
@@ -35,7 +35,6 @@
         <!-- Botones para subir y eliminar foto -->
         <div class="profile-actions">
           <button onclick="document.getElementById('profile-pic').click();" style="margin-right: 10px; border-radius: 50px;">Subir foto</button>
-
           <button style=" border-radius: 50px;"  onclick="confirmRemovePhoto()">Eliminar foto</button>
       </div>
 
@@ -62,6 +61,7 @@
           <i class="fa-solid fa-rotate-left"></i>
           Mis Devoluciones
         </button>
+        
 
         <form id="deleteAccountForm" action="{% url 'eliminar_cuenta' %}" method="post">
           {% csrf_token %}
