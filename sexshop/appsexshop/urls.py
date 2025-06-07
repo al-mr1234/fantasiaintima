@@ -25,7 +25,7 @@ from appsexshop.views import (
     login, registro, solicitar_recuperacion, pedido, verificar_codigo, 	nueva_contrasena,
     insertarsubcategoria, listadosubcategorias, borrarsubcategoria, actualizarsubcategoria,editarusuario,
     borrarusuario, insertarusuario, carrito, lencerias, productosCarrito, insertardomiciliario, editardomiciliario, borrardomiciliario,
-    insertarproducto, editarproducto, borrarproducto, vibradores, disfraces, dildos, logout, eliminar_foto_perfil, eliminar_cuenta, guardar_calificacion
+    insertarproducto, editarproducto, borrarproducto, vibradores, disfraces, dildos, logout, eliminar_foto_perfil, eliminar_cuenta, guardar_calificacion, devoluciones
 )
 
 urlpatterns = [
@@ -61,6 +61,7 @@ urlpatterns = [
     path('codigo', verificar_codigo, name='verificar_codigo'),
     path('nuevaContraseña',nueva_contrasena, name='nueva_contrasena'),
     path('pedido', pedido, name='pedido'),
+    path('devoluciones', devoluciones, name='devoluciones'),
     path('carrito', carrito, name='carrito'),
     path('lencerias', lencerias, name='lencerias'),
     path('vibradores', vibradores, name='vibradores'),
