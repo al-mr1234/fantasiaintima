@@ -93,7 +93,7 @@
 
                      <li><a class="dropdown-item" href="{% url 'pedido' %}"><i class="fa-solid fa-truck"></i> Historial de Pedidos</a></li>
 
-                      <li><a class="dropdown-item" href="{% url 'pedido' %}"><i class="fa-solid fa-rotate-left"></i> Devoluviones </a></li>
+                      <li><a class="dropdown-item" href="{% url 'devoluciones' %}"><i class="fa-solid fa-rotate-left"></i> Devoluviones </a></li>
 
                      {% if request.session.role == 1 %}
                      <li><a class="dropdown-item" href="{% url 'listadocategorias' %}"><i class="fa-regular fa-file"></i> Gestiones</a></li>
