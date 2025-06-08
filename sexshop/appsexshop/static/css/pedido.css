@@ -38,8 +38,8 @@
   }
 
   thead{
-      background-color: black;
-      color: white;
+      background-color:#f5365c;
+      color: rgb(255, 255, 255);
   }
 
 
@@ -244,6 +244,7 @@
     outline: none;
   }
 
+  
   .fab:focus {
     outline: none;
   }
