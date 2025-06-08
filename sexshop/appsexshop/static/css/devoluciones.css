@@ -1,6 +1,6 @@
 /* Estilos generales */
 body {
-    background-color: #f8f9fa;
+    background-color: #fbfafa;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -92,11 +92,62 @@ body {
     transform: scale(1.1);
 }
 
-/* Estilos para el formulario */
+/* Estilos de los input */
 .form-control:focus, .form-select:focus {
-    border-color: #f5365c;
-    box-shadow: 0 0 0 0.25rem rgba(255, 76, 205, 0.25);
+    border-color: black;
+    box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
 }
+
+/* Buscador */
+.group {
+  display: flex;
+  line-height: 28px;
+  align-items: center;
+  position: relative;
+  margin-left: 60%;
+  margin-top: 16px;
+}
+
+.input {
+  font-family: "Montserrat", sans-serif;
+  width: 400px;
+  height: 45px;
+  padding-left: 2.5rem;
+  box-shadow: 0 0 25px -11px #0000002f;
+  border: 0;
+  border-radius: 12px;
+  background-color: #fefeff;
+  outline: none;
+  color: #000000;
+  transition: all 0.25s cubic-bezier(0.19, 1, 0.22, 1);
+  cursor: text;
+  z-index: 0;
+}
+
+.input::placeholder {
+  color: #bdbecb;
+}
+
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  fill: #bdbecb;
+  width: 1rem;
+  height: 1rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@media (max-width: 776px) {
+    .group {
+      float: right;
+      width: 300px;
+    }
+    
+   
+}
+/* Buscador */
 
 .form-check-input:checked {
     background-color: #f5365c;

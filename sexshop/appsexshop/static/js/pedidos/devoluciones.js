@@ -35,6 +35,31 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     };
     
+    // Funciones de persistencia
+    function guardarDevoluciones() {
+        try {
+            localStorage.setItem('devoluciones', JSON.stringify(devoluciones));
+        } catch (error) {
+            console.error('Error al guardar devoluciones:', error);
+        }
+    }
+    
+    function cargarDevolucionesGuardadas() {
+        try {
+            const devolucionesGuardadas = localStorage.getItem('devoluciones');
+            if (devolucionesGuardadas) {
+                devoluciones = JSON.parse(devolucionesGuardadas);
+                // Convertir las fechas de string a objeto Date
+                devoluciones.forEach(devolucion => {
+                    devolucion.fecha = new Date(devolucion.fecha);
+                });
+            }
+        } catch (error) {
+            console.error('Error al cargar devoluciones:', error);
+            devoluciones = [];
+        }
+    }
+    
     // Event Listeners
     btnSolicitarDevolucion.addEventListener('click', abrirModalDevolucion);
     formDevolucion.addEventListener('submit', procesarDevolucion);
@@ -43,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
     selectPedido.addEventListener('change', cargarProductos);
     
     // Cargar datos iniciales
+    cargarDevolucionesGuardadas(); // Cargar desde localStorage primero
     cargarDevoluciones();
     
     // Funciones
@@ -134,6 +160,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Guardar la devolución
         devoluciones.push(devolucion);
         ultimaDevolucionTiempo = new Date();
+        
+        // Persistir en localStorage
+        guardarDevoluciones();
         
         // Actualizar UI
         actualizarListaDevoluciones();
@@ -289,6 +318,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (result.isConfirmed) {
                     // Eliminar la devolución
                     devoluciones.splice(index, 1);
+                    
+                    // Persistir cambios en localStorage
+                    guardarDevoluciones();
+                    
                     actualizarListaDevoluciones();
                     
                     Swal.fire(
@@ -315,8 +348,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function generarId() {
-        // Generar ID aleatorio entre 100 y 999
-        return Math.floor(Math.random() * 900 + 100);
+        // Generar ID único basado en timestamp y número aleatorio
+        const timestamp = Date.now();
+        const random = Math.floor(Math.random() * 1000);
+        return parseInt(timestamp.toString().slice(-6) + random.toString().padStart(3, '0'));
     }
     
     function formatearFecha(fecha) {
@@ -341,4 +376,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         return motivos[motivo] || motivo;
     }
+    
+    // Función adicional para limpiar localStorage (útil para desarrollo/testing)
+    function limpiarDevoluciones() {
+        localStorage.removeItem('devoluciones');
+        devoluciones = [];
+        cargarDevoluciones();
+    }
+    
+    // Exponer función de limpieza globalmente para uso en consola (opcional)
+    window.limpiarDevoluciones = limpiarDevoluciones;
 });
