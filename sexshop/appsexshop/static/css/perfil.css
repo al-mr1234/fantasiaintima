@@ -16,7 +16,7 @@ body {
     margin: 40px auto;
     padding: 33px;
     border-radius: 10px;
-    box-shadow: 7px 5px 10px 3px #030303;
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     display: flex;
     background-color:white;
     color: rgb(0, 0, 0);
@@ -29,7 +29,7 @@ body {
 @media screen and (max-width: 768px) {
   .container {
     flex-direction: column;
-    align-items: center;
+    align-items:start;
     height: auto;
     padding: 20px 15px;
     width: 95%;
@@ -92,6 +92,7 @@ body {
   flex-direction: column;
   align-items:start;
   width: 100%;
+  
   }
 
   .value {
