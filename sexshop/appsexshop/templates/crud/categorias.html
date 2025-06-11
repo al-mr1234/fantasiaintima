@@ -144,7 +144,20 @@
    <div class="container-fluid py-4">
     <div class="row">
       <div class="col-12">
-   
+
+        <!-- Mensajes de Django -->
+        {% if messages %}
+          <div>
+            {% for message in messages %}
+              <div class="alert alert-{{ message }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+
         <h4 class="card-title" style="text-align: center; color: black;">Gestión de Categorias</h4>
 
         <!-- Button  modal -->
@@ -166,7 +179,7 @@
                       <div class="modal-body">
                           <div class="mb-3">
                               <label for="formGroupExampleInput" class="form-label">Nombre Categoría</label>
-                              <input type="text" class="form-control" id="formGroupExampleInput" name="NombreCategoria" placeholder="">
+                              <input type="text" class="form-control" id="formGroupExampleInput" name="NombreCategoria" placeholder="" required>
                           </div>
                       </div>
                       <div class="modal-footer">
@@ -188,52 +201,97 @@
               </tr>
           </thead>
           <tbody>
-              {% for p in listado %}
-              <tr>
-                <td>{{ forloop.counter }}</td>
-                  <td>{{ p.1 }}</td>
-      
-                  <!-- Botón Editar -->
-                  <td>
-                      <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEditar{{ p.0 }}">
-                          Editar
-                      </button>
-      
-                      <!-- Modal Editar -->
-                      <div class="modal fade" id="modalEditar{{ p.0 }}" tabindex="-1" aria-labelledby="modalEditarLabel{{ p.0 }}" aria-hidden="true">
-                          <div class="modal-dialog">
-                              <div class="modal-content">
-                                  <div class="modal-header">
-                                      <h1 class="modal-title fs-5" id="modalEditarLabel{{ p.0 }}">¡EDITAR CATEGORÍA!</h1>
-                                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                  </div>
-      
-                                  <form method="POST" action="{% url 'actualizarcategoria' p.0 %}">
-                                      {% csrf_token %}
-                                      <div class="modal-body">
-                                          <div class="mb-3">
-                                              <label for="formGroupExampleInput" class="form-label">Nombre Categoría</label>
-                                              <input type="text" class="form-control" id="formGroupExampleInput" name="NombreCategoria" value="{{ p.1 }}">
-                                          </div>
-                                      </div>
-                                      <div class="modal-footer">
-                                          <button type="button" class="btn btn-black" data-bs-dismiss="modal">Cerrar</button>
-                                          <button type="submit" class="btn btn-danger">Actualizar categoría</button>
-                                      </div>
-                                  </form>
-                              </div>
-                          </div>
-                      </div>
-                  </td>
-      
-                  <!-- Botón Eliminar -->
-                  <td><a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarcategoria' p.0 %}"><i class="far fa-trash-alt me-2"></i>Eliminar</a></td>
-              </tr>
-              {% endfor %}
-          </tbody>
+        {% for p in page_obj %}
+        <tr>
+            <td>{{ p.0 }}</td>
+            <td>{{ p.1 }}</td>
+            <td>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEditar{{ p.0 }}">
+                    Editar
+                </button>
+                <!-- Modal Editar -->
+                <div class="modal fade" id="modalEditar{{ p.0 }}" tabindex="-1" aria-labelledby="modalEditarLabel{{ p.0 }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="modalEditarLabel{{ p.0 }}">Editar Categoría</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+                            <form method="POST" action="{% url 'actualizarcategoria' p.0 %}">
+                                {% csrf_token %}
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label for="nombreCategoriaEditar{{ p.0 }}" class="form-label">Nombre Categoría</label>
+                                        <input type="text" class="form-control" id="nombreCategoriaEditar{{ p.0 }}" name="NombreCategoria" value="{{ p.1 }}" required>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-black" data-bs-dismiss="modal">Cerrar</button>
+                                    <button type="submit" class="btn btn-danger">Actualizar categoría</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </td>
+            <td><a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarcategoria' p.0 %}"><i class="far fa-trash-alt me-2"></i>Eliminar</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
       </table>
-      
 
+      <!-- Controles de paginación -->
+      <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Anterior">
+                <span aria-hidden="true">&laquo;</span>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&laquo;</span>
+            </li>
+          {% endif %}
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+              <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% else %}
+              <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Siguiente">
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&raquo;</span>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+
+<style>
+.pagination .page-item.active .page-link {
+    background-color: #f53b57 !important; 
+    border-color: #f53b57 !important;
+    color: #fff !important;
+    box-shadow: 0 4px 14px 0 rgba(245,59,87,0.15);
+}
+.pagination .page-link {
+    color: #f53b57;
+    border-radius: 50% !important;
+    margin: 0 2px;
+    border: none;
+}
+.pagination .page-item .page-link:focus {
+    box-shadow: 0 0 0 0.2rem rgba(245,59,87,0.25);
+}
+</style>
 
 
 <!--footer-->
@@ -281,7 +339,6 @@
       Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
     }
   </script>
-  <!-- Github buttons -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>
   <!-- Control Center for Soft Dashboard: parallax effects, scripts for the example pages etc -->
   <script src="{% static 'js/argon-dashboard.min.js?v=2.0.4' %}"></script>

@@ -60,7 +60,7 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link " href="{% url 'crudSubCategorias' %}">
+          <a class="nav-link " href="{% url 'listadosubcategorias' %}">
             <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
                 <i class="fa-solid fa-plus text-danger text-sm opacity-10"></i>
             </div>
@@ -212,9 +212,9 @@
     </tr>
   </thead>
   <tbody>
-    {% for usuario in usuarios %}
+    {% for usuario in page_obj %}
     <tr>
-      <td>{{ forloop.counter }}</td>
+      <td>{{ usuario.IdUsuario }}</td>
       <td>{{ usuario.PrimerNombre }}</td>
       <td>{{ usuario.OtrosNombres }}</td>
       <td>{{ usuario.PrimerApellido }}</td>
@@ -226,7 +226,6 @@
         <button  type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEditarUsuario{{ usuario.IdUsuario }}">
            Editar
         </button>
-
         <a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarusuario' usuario.IdUsuario %}">
           <i class="far fa-trash-alt me-2"></i>Eliminar
         </a>
@@ -282,8 +281,61 @@
       </div>
     </div>
     {% endfor %}
-  </tbody>
+</tbody>
 </table>
+<nav aria-label="Page navigation">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Anterior">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">&laquo;</span>
+      </li>
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+      {% else %}
+        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+      {% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Siguiente">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">&raquo;</span>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+
+<style>
+/* Cambia el color del botón de paginación activo y los círculos a rojo */
+.pagination .page-item.active .page-link {
+    background-color: #f53b57 !important;
+    border-color: #f53b57 !important;
+    color: #fff !important;
+    box-shadow: 0 4px 14px 0 rgba(245,59,87,0.15);
+}
+.pagination .page-link {
+    color: #f53b57;
+    border-radius: 50% !important;
+    margin: 0 2px;
+    border: none;
+}
+.pagination .page-item .page-link:focus {
+    box-shadow: 0 0 0 0.2rem rgba(245,59,87,0.25);
+}
+</style>
+
 <script>
   function filterUsuarios() {
     const input = document.getElementById('searchInput');
