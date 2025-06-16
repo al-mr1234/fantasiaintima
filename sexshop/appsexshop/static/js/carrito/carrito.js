@@ -1,139 +1,152 @@
-// Recuperar carrito del localStorage o inicializar vacío
-let cart = JSON.parse(localStorage.getItem('cart')) || [];
+document.addEventListener('DOMContentLoaded', () => {
+  mostrarCarrito();
 
-// Mostrar productos en el carrito
-function showCart() {
-    const cartContainer = document.getElementById('cart-container');
-    const totalAmount = document.getElementById('total-amount');
-    cartContainer.innerHTML = '';
-    let subtotal = 0;
-
-    if (cart.length === 0) {
-        cartContainer.innerHTML = "<p>No hay productos en el carrito.</p>";
-        totalAmount.textContent = "$0";
-        return;
-    }
-
-    cart.forEach((product, index) => {
-        const productTotal = product.price * product.quantity;
-        subtotal += productTotal;
-
-        const formattedPrice = product.price.toLocaleString('es-CO');
-        const formattedSubtotal = productTotal.toLocaleString('es-CO');
-
-        const cartItem = `
-            <div class="cart-item">
-                <img src="${product.image}" alt="${product.name}" class="product-image">
-                <div class="product-details">
-                    <h5>${product.name}</h5>
-                    <p>${product.details}</p>
-                    <h3 class="price">Precio: $${formattedPrice}</h3>
-                </div>
-                <div class="product-actions">
-                    <p class="subtotal">Subtotal: $${formattedSubtotal}</p>
-                    <div class="quantity">
-                        <button class="btn-quantity" onclick="decrementQuantity(${index})">-</button>
-                        <input type="number" id="cantidad-${index}" min="1" value="${product.quantity}" 
-                               onchange="updateQuantity(${index}, this.value)">
-                        <button class="btn-quantity" onclick="incrementQuantity(${index})">+</button>
-                    </div>
-                    <button class="btn-icon" onclick="removeFromCart(${index})" title="Eliminar">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-        cartContainer.innerHTML += cartItem;
-    });
-
-    totalAmount.textContent = `$${subtotal.toLocaleString('es-CO')}`;
-}
-
-// Incrementar cantidad
-function incrementQuantity(index) {
-    cart[index].quantity += 1;
-    localStorage.setItem('cart', JSON.stringify(cart));
-    showCart();
-}
-
-// Decrementar cantidad
-function decrementQuantity(index) {
-    if (cart[index].quantity > 1) {
-        cart[index].quantity -= 1;
-        localStorage.setItem('cart', JSON.stringify(cart));
-        showCart();
-    } else {
-        removeFromCart(index);
-    }
-}
-
-// Actualizar cantidad de un producto
-function updateQuantity(index, quantity) {
-    if (quantity < 1) {
-        removeFromCart(index);
-        return;
-    }
-    cart[index].quantity = parseInt(quantity);
-    localStorage.setItem('cart', JSON.stringify(cart));
-    showCart();
-}
-
-// Eliminar un producto del carrito
-function removeFromCart(index) {
-    cart.splice(index, 1);
-    localStorage.setItem('cart', JSON.stringify(cart));
-    showCart();
-}
-
-// Vaciar el carrito
-function clearCart() {
-    cart = [];
-    localStorage.setItem('cart', JSON.stringify(cart));
-    showCart();
-}
-
-// Proceder al pago
-function checkout() {
-    if (cart.length === 0) {
-        alert("Tu carrito está vacío.");
-        return;
-    }
-    alert("Redirigiendo a la página de pago...");
-}
-
-// Función para volver atrás
-function goBack() {
-    window.history.back(); // Volver a la página anterior
-}
-
-// Inicializar la vista del carrito
-document.addEventListener("DOMContentLoaded", showCart);
-
-//alerta de formulario de entrega
-document.getElementById("formPago").addEventListener("submit", function (e) {
+  document.getElementById('formPago').addEventListener('submit', function (e) {
     e.preventDefault();
+    registrarPago();
+  });
+});
 
-    Swal.fire({
-      icon: 'success',
-      title: '¡Datos entregados!',
-      text: 'Tu información para la entrega de los productos ha sido enviada.',
-      confirmButtonColor: '#f5365c',
-      confirmButtonText: 'Aceptar',
-      customClass: {
-        popup: 'rounded-4'
-      }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // Cerrar el modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
-        modal.hide();
+function mostrarCarrito() {
+  const cartContainer = document.getElementById('cart-container');
+  const totalAmount = document.getElementById('total-amount');
+  const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 
-        // Limpiar el formulario
-        document.getElementById("formPago").reset();
+  cartContainer.innerHTML = '';
+  let total = 0;
 
-        // Vaciar el carrito
-        clearCart();
-      }
-    });
+  if (carrito.length === 0) {
+    cartContainer.innerHTML = '<p class="text-center">Tu carrito está vacío.</p>';
+    totalAmount.textContent = '$0.00';
+    return;
+  }
+
+  carrito.forEach((producto, index) => {
+    const item = document.createElement('div');
+    item.className = 'card mb-3';
+    item.innerHTML = `
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3" style="max-width: 60%;">
+          <img src="${producto.imagen}" alt="${producto.nombre}" style="width: 100px; height: 120px; object-fit: cover; border-radius: 10px;">
+          <div>
+            <h5 class="card-title mb-1">${producto.nombre}</h5>
+            <p class="card-text mb-1">${producto.descripcion || ''}</p>
+            <p class="card-text mb-1">Precio unitario: $${producto.precio.toFixed(2)}</p>
+          </div>
+        </div>
+        <div class="text-end" style="min-width: 160px;">
+          <p class="mb-2 fw-bold">$${(producto.precio * producto.cantidad).toFixed(2)}</p>
+          <div class="d-flex flex-column align-items-end gap-2">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad(${index}, -1)">-</button>
+              <span>${producto.cantidad}</span>
+              <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad(${index}, 1)">+</button>
+            </div>
+            <button class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${index})">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    cartContainer.appendChild(item);
+    total += producto.precio * producto.cantidad;
   });
 
+  totalAmount.textContent = `$${total.toFixed(2)}`;
+}
+
+// Ahora usamos el INDEX y no el ID para evitar errores con productos iguales
+function eliminarDelCarrito(index) {
+  let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+  carrito.splice(index, 1);
+  localStorage.setItem('carrito', JSON.stringify(carrito));
+  mostrarCarrito();
+}
+
+function cambiarCantidad(index, cambio) {
+  let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+  carrito[index].cantidad += cambio;
+  if (carrito[index].cantidad < 1) carrito[index].cantidad = 1;
+  localStorage.setItem('carrito', JSON.stringify(carrito));
+  mostrarCarrito();
+}
+
+function clearCart() {
+  Swal.fire({
+    title: '¿Estás segura?',
+    text: 'Esto vaciará todo tu carrito.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#f5365c',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Sí, vaciar',
+  }).then((result) => {
+    if (result.isConfirmed) {
+      localStorage.removeItem('carrito');
+      mostrarCarrito();
+      Swal.fire('Carrito vaciado', '', 'success');
+    }
+  });
+}
+
+function registrarPago() {
+  const nombre = document.getElementById('nombreCompleto').value;
+  const direccion = document.getElementById('direccion').value;
+  const correo = document.getElementById('correo').value;
+  const telefono = document.getElementById('telefono').value;
+  const fechaEntrega = document.getElementById('fechaEntrega').value;
+  const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+
+  if (carrito.length === 0) {
+    Swal.fire('Carrito vacío', 'Agrega productos antes de pagar.', 'info');
+    return;
+  }
+
+  const datos = {
+    nombre, direccion, correo, telefono, fechaEntrega, carrito
+  };
+
+  fetch('/registrar-pago/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken'),
+    },
+    body: JSON.stringify(datos),
+  })
+    .then(response => {
+      if (response.ok) {
+        Swal.fire('¡Pago registrado!', 'Gracias por tu compra.', 'success');
+        localStorage.removeItem('carrito');
+        mostrarCarrito();
+        document.getElementById('formPago').reset();
+        const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+        modal.hide();
+      } else {
+        throw new Error('Error al registrar el pago');
+      }
+    })
+    .catch(() => {
+      Swal.fire('Error', 'No se pudo registrar el pago. Intenta de nuevo.', 'error');
+    });
+}
+
+function goBack() {
+  window.history.back();
+}
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let c of cookies) {
+      const cookie = c.trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}

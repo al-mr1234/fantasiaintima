@@ -1,24 +1,31 @@
+const carritoKey = 'carrito';
+
+const obtenerCarrito = () => JSON.parse(localStorage.getItem(carritoKey) || '[]');
+const guardarCarrito = carrito => localStorage.setItem(carritoKey, JSON.stringify(carrito));
+
+const actualizarIconoCarrito = () => {
+  const total = obtenerCarrito().reduce((acc, item) => acc + item.cantidad, 0);
+  const icono = document.getElementById('cartCount');
+  if (icono) icono.textContent = total;
+};
+
+const agregarAlCarrito = (idProducto, nombre, precio, cantidad, imagen) => {
+  console.log("agregarAlCarrito llamado con:", idProducto, nombre, precio, cantidad, imagen);
+  const carrito = obtenerCarrito();
+  const prod = carrito.find(p => p.idProducto === idProducto);
+  if (prod) prod.cantidad += cantidad;
+  else carrito.push({ idProducto, nombre, precio, cantidad, imagen });  // Guardamos la imagen
+  guardarCarrito(carrito);
+  actualizarIconoCarrito();
+  console.log('Producto agregado:', carrito);
+};
+
 function getStarsHTML(rating) {
     let starsHTML = '';
     for (let i = 1; i <= 5; i++) {
         starsHTML += `<span class="star ${i <= rating ? 'active' : ''}" data-value="${i}">&#9733;</span>`;
     }
     return starsHTML;
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            cookie = cookie.trim();
-            if (cookie.startsWith(name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
 }
 
 function enviarCalificacion(id_producto, calificacion) {
@@ -31,40 +38,22 @@ function enviarCalificacion(id_producto, calificacion) {
     })
     .then(response => response.json())
     .then(data => {
-    // Mostrar mensaje en pantalla
-    document.getElementById("mensaje-calificacion").textContent = data.mensaje;
-    document.getElementById("mensaje-calificacion").classList.remove("d-none");
+        const msg = document.getElementById("mensaje-calificacion");
+        msg.textContent = data.mensaje;
+        msg.classList.remove("d-none");
+        setTimeout(() => msg.classList.add("d-none"), 2000);
 
-    setTimeout(() => {
-    document.getElementById("mensaje-calificacion").classList.add("d-none");
-    }, 2000); 
+        if (data.success) {
+            const ratingText = document.querySelector('.rating-text');
+            if (ratingText) ratingText.textContent = `(${data.nuevo_promedio})`;
 
-    if (data.success) {
-        // Actualizar el promedio mostrado
-        const ratingText = document.querySelector('.rating-text');
-        if (ratingText) {
-            ratingText.textContent = `(${data.nuevo_promedio})`;
+            const reviewSpan = document.getElementById(`review-count-${id_producto}`);
+            if (reviewSpan) reviewSpan.textContent = `(${data.total_reviews})`;
+        } else {
+            console.error('Error al guardar la calificación:', data.mensaje);
         }
-
-        // Actualizar número de reviews
-        const reviewSpan = document.getElementById(`review-count-${id_producto}`);
-        if (reviewSpan) {
-            reviewSpan.textContent = `(${data.total_reviews})`;
-        }
-    } else {
-        console.error('Error al guardar la calificación:', data.mensaje);
-    }
-})
+    });
 }
-
-
-function actualizarReviewCount(idProducto, nuevoReviewCount) {
-    const card = document.querySelector(`.card[data-id='${idProducto}']`);
-    if (card) {
-        card.setAttribute('data-review-count', nuevoReviewCount);
-    }
-}
-
 
 function showProductDetails(card) {
     const idProducto = card.getAttribute('data-id');
@@ -99,7 +88,10 @@ function showProductDetails(card) {
         </div>
     `;
 
-    // Eventos para aumentar/disminuir cantidad
+    const modal = document.getElementById('productModal');
+    modal.setAttribute('data-id-producto', idProducto);
+    modal.setAttribute('data-imagen-producto', imagen);  // Guardamos la imagen aquí también
+
     const increaseBtn = document.getElementById("increaseQuantity");
     const decreaseBtn = document.getElementById("decreaseQuantity");
     const quantityInput = document.getElementById("productQuantity");
@@ -114,38 +106,65 @@ function showProductDetails(card) {
         }
     });
 
-    const addToCartModalBtn = document.getElementById('add-to-cart-modal');
-    addToCartModalBtn.disabled = false;
-
-    addToCartModalBtn.onclick = () => {
-        const quantity = quantityInput.value;
-        console.log(`Agregar desde modal: ${nombre} x${quantity}`);
-    };
-
     const stars = document.querySelectorAll('.stars .star');
     stars.forEach(star => {
         star.addEventListener('click', () => {
             const selectedRating = star.getAttribute('data-value');
-            stars.forEach(s => {
-                s.classList.toggle('active', s.getAttribute('data-value') <= selectedRating);
-            });
+            stars.forEach(s => s.classList.toggle('active', s.getAttribute('data-value') <= selectedRating));
             enviarCalificacion(idProducto, selectedRating);
         });
     });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.card').forEach(card => {
-        card.addEventListener('click', function(e){
-            const clickedInsideButton = e.target.classList.contains('add-to-cart-btn') || e.target.closest('.add-to-cart-btn');
-            if (clickedInsideButton) {
-                const nombre = this.getAttribute('data-nombre');
-                console.log(`Agregar desde card: ${nombre}`);
-                return;
-            }
-            showProductDetails(this);
-            const modal = new bootstrap.Modal(document.getElementById('productModal'));
-            modal.show();
-        });
+  actualizarIconoCarrito();
+
+  document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      const clickedInsideButton = e.target.classList.contains('add-to-cart-btn') || e.target.closest('.add-to-cart-btn');
+      if (clickedInsideButton) {
+        e.stopPropagation();
+        agregarAlCarrito(
+          card.getAttribute('data-id'),
+          card.getAttribute('data-nombre'),
+          parseFloat(card.getAttribute('data-precio')),
+          1,
+          card.getAttribute('data-imagen')  // Aquí pasamos la imagen
+        );
+        return;
+      }
+      showProductDetails(card);
+      const modal = new bootstrap.Modal(document.getElementById('productModal'));
+      modal.show();
     });
+  });
+
+  const addToCartModalBtn = document.getElementById('add-to-cart-modal');
+  addToCartModalBtn.onclick = () => {
+    console.log("Botón modal clickeado");
+    const modal = document.getElementById('productModal');
+    const cantidad = parseInt(document.getElementById('productQuantity').value);
+    const nombre = document.querySelector('#productDetails .product-title').textContent;
+    const precio = parseFloat(document.querySelector('#productDetails .price').textContent.replace(/[^0-9.-]+/g,""));
+    const idProducto = modal.getAttribute('data-id-producto');
+    const imagen = modal.getAttribute('data-imagen-producto');  // Obtenemos imagen del atributo
+
+    if (!idProducto) return console.error('No se encontró el id del producto en el modal');
+    agregarAlCarrito(idProducto, nombre, precio, cantidad, imagen);
+  };
+
+  const searchInput = document.getElementById('query');
+  searchInput.addEventListener('input', () => {
+    const filtro = searchInput.value.toLowerCase().trim();
+    const cards = document.querySelectorAll('#productList .card');
+
+    cards.forEach(card => {
+      const nombre = card.getAttribute('data-nombre').toLowerCase();
+      if (nombre.includes(filtro)) {
+        card.parentElement.style.display = '';
+      } else {
+        card.parentElement.style.display = 'none';
+      }
+    });
+  });
 });

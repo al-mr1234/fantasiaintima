@@ -677,6 +677,13 @@ def guardar_calificacion(request):
 
     return JsonResponse({'success': False, 'mensaje': 'Método no permitido'})
 
+def catalogo_view(request):
+    categorias = categoria.objects.prefetch_related('subcategoria_set').all()
+    productos = producto.objects.all()
+    return render(request, 'catalogo.html', {
+        'categorias': categorias,
+        'productos': productos,
+    })
     
 
 # region perfiles

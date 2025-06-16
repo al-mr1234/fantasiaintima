@@ -10,25 +10,13 @@
     <link rel="stylesheet" href="{% static 'css/stylesCarrito.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/catalogo.css' %}"> 
-    <style>
-        /* Agregamos estilos para las estrellas */
-        .star {
-            font-size: 20px; /* Ajusta tamaño según necesidad */
-            color: gold;
-            cursor: pointer;
-            user-select: none;
-            margin-right: 2px;
-        }
-        .star.active {
-            color: orange;
-        }
-    </style>
+    
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
         <a class="navbar-brand me-2">
-            <img src="{% static 'img/carrito/Copia_de_Fantasia.png' %}"  class="logoPrincipal" alt="Logo" style="height: 60px; width: 95px">
+            <img src="{% static 'img/carrito/Copia_de_Fantasia.png' %}" class="logoPrincipal" alt="Logo" style="height: 60px; width: 95px">
         </a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
@@ -43,11 +31,39 @@
                 <li class="nav-item"><a class="nav-link" href="{% url 'disfraces' %}">Disfraces</a></li>
                 <li class="nav-item"><a class="nav-link" href="{% url 'dildos' %}">Dildos</a></li>
                 <li class="nav-item"><a class="nav-link" href="{% url 'productosCarrito' %}">Todos los productos</a></li>
+                
+                <!-- Menú dinámico de categorías -->
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" id="categoriasDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Categorías
+                  </a>
+                  <ul class="dropdown-menu" aria-labelledby="categoriasDropdown">
+                    {% for categoria in categorias %}
+                      <li class="dropdown-submenu">
+                        <a class="dropdown-item dropdown-toggle" href="#">{{ categoria.NombreCategoria }}</a>
+                        <ul class="dropdown-menu">
+                          {% for sub in categoria.subcategoria_set.all %}
+                            <li><a class="dropdown-item" href="#">{{ sub.NombresubCategoria }}</a></li>
+                          {% empty %}
+                            <li><span class="dropdown-item text-muted">Sin subcategorías</span></li>
+                          {% endfor %}
+                        </ul>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </li>
             </ul>
-            <button class="btn btn-outline-secondary me-2" disabled>
+
+            <!-- Buscador -->
+            <div class="search-container">
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="search-icon"></svg>
+              <input id="query" type="search" placeholder="Buscar producto..." autocomplete="off">
+            </div>
+
+            <a href="{% url 'carrito' %}" class="btn btn-outline-secondary me-2">
                 <i class="fas fa-shopping-cart"></i> <span id="cartCount">0</span>
-            </button>
-            <button class="btn btn-outline-secondary" disabled>
+            </a>
+            <button class="btn btn-outline-secondary">
                 <i class="fas fa-user"></i>
             </button>
         </div>
@@ -97,7 +113,7 @@
             <div id="mensaje-calificacion" class="alert alert-success d-none" role="alert"></div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-dark" data-bs-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn" id="add-to-cart-modal" style="background-color: #f5365c; color: white;" disabled>
+                <button type="button" class="btn" id="add-to-cart-modal" style="background-color: #f5365c; color: white;">
                     Agregar al carrito <i class="fas fa-shopping-cart"></i>
                 </button>
             </div>
@@ -110,4 +126,3 @@
 <script src="{% static 'js/carrito/catalogo.js' %}"></script>
 </body>
 </html>
-
