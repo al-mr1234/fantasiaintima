@@ -149,7 +149,11 @@
         {% if messages %}
           <div>
             {% for message in messages %}
+<<<<<<< HEAD
               <div class="alert alert-{{ message }} alert-dismissible fade show" role="alert">
+=======
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+>>>>>>> 7c57998c5c8818fdd469d080e6825642ca668a1f
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
               </div>
@@ -210,6 +214,7 @@
                     Editar
                 </button>
                 <!-- Modal Editar -->
+<<<<<<< HEAD
                 <div class="modal fade" id="modalEditar{{ p.0 }}" tabindex="-1" aria-labelledby="modalEditarLabel{{ p.0 }}" aria-hidden="true">
                     <div class="modal-dialog">
                         <div class="modal-content">
@@ -233,6 +238,9 @@
                         </div>
                     </div>
                 </div>
+=======
+                <!-- ...modal code... -->
+>>>>>>> 7c57998c5c8818fdd469d080e6825642ca668a1f
             </td>
             <td><a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarcategoria' p.0 %}"><i class="far fa-trash-alt me-2"></i>Eliminar</a></td>
         </tr>

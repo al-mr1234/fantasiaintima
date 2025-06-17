@@ -26,7 +26,13 @@
   <body>
 
   <div class="form-container">
-    <p class="title">Fantasia Intima</p>
+    <p id="login-title" class="title" style="text-align: center; {% if error %}color: #f5365c;{% endif %}">
+      {% if error %}
+        {{ error }}
+      {% else %}
+        Fantasia Intima
+      {% endif %}
+    </p>
     
 
     <!-- Formulario de login -->
@@ -47,6 +53,7 @@
       {% if error %}
         <p style="color:red;">{{ error }}</p>
       {% endif %}
+
     </form>
 
     <!-- Enlace para registro -->
@@ -65,9 +72,6 @@
       </svg>
       <span>Iniciar sesión con Google</span>
     </a>
-
   </div>
-
-
   </body>
 </html>

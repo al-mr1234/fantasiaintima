@@ -150,7 +150,11 @@
                       {% if messages %}
                         <div class="mt-3 ms-5" style="max-width: 500px;"></div>
                           {% for message in messages %}
+<<<<<<< HEAD
                             <div class="alert alert-{{ message }} alert-dismissible fade show" role="alert">
+=======
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+>>>>>>> 7c57998c5c8818fdd469d080e6825642ca668a1f
                               {{ message }}
                               <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
@@ -529,3 +533,4 @@
 </body>
 
 </html>
+
