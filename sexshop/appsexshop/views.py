@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.db import connection
 from .models import categoria, subcategoria, roles, usuario, domiciliario, producto, Calificacion
 from django.contrib.auth.hashers import make_password, check_password
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseNotFound
 from django.db.models import Q
 from django.contrib import messages
 from django.core.mail import send_mail
@@ -15,6 +15,8 @@ import re
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.contrib.sessions.models import Session
+from django.shortcuts import redirect
 
 
 def LadingPage(request):
@@ -48,6 +50,8 @@ def validar_nombre_categoria(nombre):
     return True, None
 
 def insertarcategorias(request):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     if request.method == "POST":
         if request.POST.get('NombreCategoria'):
             nombre = request.POST.get('NombreCategoria').strip()
@@ -70,17 +74,28 @@ def insertarcategorias(request):
     return render(request, 'listadocategorias')
 
 def listadocategorias(request):
-    listado = connection.cursor()
-    listado.execute("CALL listadocategorias()")
-    categorias = listado.fetchall()
-    # Ordenar por ID (índice 0) en orden descendente
+    try:
+        role = request.session.get('role')
+    except Exception as e:
+        print("Error de sesión:", e)
+        return redirect('login')  # o muestra una página de error
+
+    if role is None or role != 1:
+        return mostrar_404(request)
+
+    with connection.cursor() as listado:
+        listado.execute("CALL listadocategorias()")
+        categorias = listado.fetchall()
+
     categorias = sorted(categorias, key=lambda x: x[0], reverse=True)
     page_number = request.GET.get('page', 1)
-    paginator = Paginator(categorias, 5) 
+    paginator = Paginator(categorias, 5)
     page_obj = paginator.get_page(page_number)
     return render(request, "crud/categorias.html", {"page_obj": page_obj})
 
 def borrarcategoria(request, id_categoria):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     try:
         borrar = connection.cursor()
         borrar.execute("CALL borrarcategoria(%s)", [id_categoria])
@@ -90,6 +105,8 @@ def borrarcategoria(request, id_categoria):
     return redirect('listadocategorias')
 
 def actualizarcategoria(request, id_categoria):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     if request.method == "POST":
         if request.POST.get('NombreCategoria'):
             actualizar = connection.cursor()
@@ -105,6 +122,8 @@ def actualizarcategoria(request, id_categoria):
 
 # region subcategorias
 def listadosubcategorias(request):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     subcategorias_list = subcategoria.objects.all().order_by('-IdSubCategoria')
     categorias = categoria.objects.all()
     page_number = request.GET.get('page', 1)
@@ -123,6 +142,8 @@ def validar_nombre_subcategoria(nombre):
     return None
 
 def insertarsubcategoria(request):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     if request.method == "POST":
         nombre = request.POST.get('nombre', '').strip()
         categoria_id = request.POST.get('categoria_id')
@@ -141,6 +162,8 @@ def insertarsubcategoria(request):
     return redirect('listadosubcategorias')  # <--- aquí
 
 def actualizarsubcategoria(request, id_subcategoria):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     subcat = get_object_or_404(subcategoria, IdSubCategoria=id_subcategoria)
     if request.method == "POST":
         nombre = request.POST.get('nombre', '').strip()
@@ -165,6 +188,8 @@ def actualizarsubcategoria(request, id_subcategoria):
     return redirect('crudSubCategorias')
 
 def borrarsubcategoria(request, id_subcategoria):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     subcat = get_object_or_404(subcategoria, IdSubCategoria=id_subcategoria)
     # Bloquear si tiene productos relacionados
     if producto.objects.filter(IdSubCategoria=subcat).exists():
@@ -263,9 +288,11 @@ def login(request):
 
         # --- Usuario no registrado ---
         try:
-            user = usuario.objects.get(Correo=correo)
-        except usuario.DoesNotExist:
-            return render(request, 'login/login.html', {'error': 'Usuario no encontrado'})
+            user = usuario.objects.filter(Correo=correo).first()
+            if not user:
+                return render(request, 'login/login.html', {'error': 'Usuario no encontrado'})
+        except Exception:
+            return render(request, 'login/login.html', {'error': 'Error de autenticación'})
 
         # --- Contraseña incorrecta ---
         if not (user.Contraseña == contraseña or check_password(contraseña, user.Contraseña)):
@@ -447,26 +474,108 @@ def nueva_contrasena(request):
     return render(request, 'login/nuevaContraseña.html')
 
 
+def insertardomiciliario(request):
+    if request.method == "POST":
+        tipo_documento = request.POST.get('TipoDocumento', '').strip()
+        documento = request.POST.get('Documento', '').strip()
+        nombre_domiciliario = request.POST.get('NombreDomiciliario', '').strip()
+        primer_apellido = request.POST.get('PrimerApellido', '').strip()
+        segundo_apellido = request.POST.get('SegundoApellido', '').strip()
+        celular = request.POST.get('Celular', '').strip()
+        ciudad = request.POST.get('Ciudad', '').strip()
+        correo = request.POST.get('Correo', '').strip()
+        contraseña = request.POST.get('Contraseña', '')
+
+        # Validar campos vacíos
+        if not (tipo_documento and documento and nombre_domiciliario and primer_apellido and celular and ciudad and correo and contraseña):
+            messages.error(request, "Todos los campos son obligatorios")
+            return redirect('crudDomiciliarios')
+
+        # Validar que el nombre no tenga espacios
+        if ' ' in nombre_domiciliario:
+            messages.error(request, "El nombre no debe contener espacios")
+            return redirect('crudDomiciliarios')
+
+        # Validar correo único
+        if domiciliario.objects.filter(Correo__iexact=correo).exists():
+            messages.error(request, "El correo ya está registrado")
+            return redirect('crudDomiciliarios')
+
+        # Validar documento único
+        if domiciliario.objects.filter(Documento=documento).exists():
+            messages.error(request, "El documento ya está registrado")
+            return redirect('crudDomiciliarios')
+
+        # Validar que el documento sea numérico y no muy largo
+        if not documento.isdigit():
+            messages.error(request, "El documento debe ser un número")
+            return redirect('crudDomiciliarios')
+        if len(documento) > 10:
+            messages.error(request, "El documento es demasiado largo")
+            return redirect('crudDomiciliarios')
+
+        rol_domiciliario = roles.objects.get(IdRol=2)
+        nuevo_domiciliario = domiciliario(
+            TipoDocumento=tipo_documento,
+            Documento=documento,
+            NombreDomiciliario=nombre_domiciliario,
+            PrimerApellido=primer_apellido,
+            SegundoApellido=segundo_apellido,
+            Celular=celular,
+            Ciudad=ciudad,
+            Correo=correo,
+            Contraseña=make_password(contraseña),
+            IdRol=rol_domiciliario
+        )
+        nuevo_domiciliario.save()
+        messages.success(request, "Domiciliario creado exitosamente")
+        return redirect('crudDomiciliarios')
+    return redirect('crudDomiciliarios')
+
 def insertarusuario(request):
     if request.method == "POST":
-        if (request.POST.get('PrimerNombre') and request.POST.get('OtrosNombres') and
-            request.POST.get('PrimerApellido') and request.POST.get('SegundoApellido') and
-            request.POST.get('Correo') and request.POST.get('NombreUsuario') and
-            request.POST.get('Contraseña')):
+        primer_nombre = request.POST.get('PrimerNombre', '').strip()
+        otros_nombres = request.POST.get('OtrosNombres', '').strip()
+        primer_apellido = request.POST.get('PrimerApellido', '').strip()
+        segundo_apellido = request.POST.get('SegundoApellido', '').strip()
+        correo = request.POST.get('Correo', '').strip()
+        nombre_usuario = request.POST.get('NombreUsuario', '').strip()
+        contraseña = request.POST.get('Contraseña', '')
 
-            rol_default = roles.objects.get(IdRol=3)  
-            nuevo_usuario = usuario(
-                PrimerNombre=request.POST.get('PrimerNombre'),
-                OtrosNombres=request.POST.get('OtrosNombres'),
-                PrimerApellido=request.POST.get('PrimerApellido'),
-                SegundoApellido=request.POST.get('SegundoApellido'),
-                Correo=request.POST.get('Correo'),
-                NombreUsuario=request.POST.get('NombreUsuario'),
-                Contraseña=make_password(request.POST.get('Contraseña')),
-                idRol=rol_default
-            )
-            nuevo_usuario.save()
-            return redirect('crudUsuarios')  # Redirige a la lista de usuarios
+        # Validar campos vacíos
+        if not (primer_nombre and otros_nombres and primer_apellido and segundo_apellido and correo and nombre_usuario and contraseña):
+            messages.error(request, "Todos los campos son obligatorios")
+            return redirect('crudUsuarios')
+
+        # Validar que el nombre de usuario no tenga espacios
+        if ' ' in nombre_usuario:
+            messages.error(request, "El nombre de usuario no debe contener espacios")
+            return redirect('crudUsuarios')
+
+        # Validar correo único
+        if usuario.objects.filter(Correo__iexact=correo).exists():
+            messages.error(request, "El correo ya está registrado")
+            return redirect('crudUsuarios')
+
+        # Validar nombre de usuario único
+        if usuario.objects.filter(NombreUsuario__iexact=nombre_usuario).exists():
+            messages.error(request, "El nombre de usuario ya existe")
+            return redirect('crudUsuarios')
+
+        rol_default = roles.objects.get(IdRol=3)
+        nuevo_usuario = usuario(
+            PrimerNombre=primer_nombre,
+            OtrosNombres=otros_nombres,
+            PrimerApellido=primer_apellido,
+            SegundoApellido=segundo_apellido,
+            Correo=correo,
+            NombreUsuario=nombre_usuario,
+            Contraseña=make_password(contraseña),
+            idRol=rol_default
+        )
+        nuevo_usuario.save()
+        messages.success(request, "Usuario creado exitosamente")
+        return redirect('crudUsuarios')
     return redirect('crudUsuarios')
 
 
@@ -496,34 +605,68 @@ def borrarusuario(request, id_usuario):
 
 #region domiciliario
 def insertardomiciliario(request):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     if request.method == "POST":
-        try:
-            # Asignar automáticamente el rol de domiciliario
-            rol_domiciliario = roles.objects.get(IdRol=2)
+        tipo_documento = request.POST.get('TipoDocumento', '').strip()
+        documento = request.POST.get('Documento', '').strip()
+        nombre_domiciliario = request.POST.get('NombreDomiciliario', '').strip()
+        primer_apellido = request.POST.get('PrimerApellido', '').strip()
+        segundo_apellido = request.POST.get('SegundoApellido', '').strip()
+        celular = request.POST.get('Celular', '').strip()
+        ciudad = request.POST.get('Ciudad', '').strip()
+        correo = request.POST.get('Correo', '').strip()
+        contraseña = request.POST.get('Contraseña', '')
 
-            # Crear el domiciliario con los datos del formulario
-            nuevo_domiciliario = domiciliario(
-                TipoDocumento=request.POST.get('TipoDocumento'),
-                Documento=request.POST.get('Documento'),
-                NombreDomiciliario=request.POST.get('NombreDomiciliario'),
-                PrimerApellido=request.POST.get('PrimerApellido'),
-                SegundoApellido=request.POST.get('SegundoApellido'),
-                Celular=request.POST.get('Celular'),
-                Ciudad=request.POST.get('Ciudad'),  # Captura la ciudad
-                Correo=request.POST.get('Correo'),
-                Contraseña=make_password(request.POST.get('Contraseña')),
-                IdRol=rol_domiciliario  # Asignar el rol de domiciliario
-            )
-
-            nuevo_domiciliario.save()
-
+        # Validar campos vacíos
+        if not (tipo_documento and documento and nombre_domiciliario and primer_apellido and celular and ciudad and correo and contraseña):
+            messages.error(request, "Todos los campos son obligatorios")
             return redirect('crudDomiciliarios')
-        except roles.DoesNotExist:
-            return render(request, 'crud/insertar_domiciliario.html', {'error': 'El rol especificado no existe en el sistema.'})
-    
-    return render(request, 'crud/insertar_domiciliario.html')
+
+        # Validar que el nombre no tenga espacios
+        if ' ' in nombre_domiciliario:
+            messages.error(request, "El nombre no debe contener espacios")
+            return redirect('crudDomiciliarios')
+
+        # Validar correo único
+        if domiciliario.objects.filter(Correo__iexact=correo).exists():
+            messages.error(request, "El correo ya está registrado")
+            return redirect('crudDomiciliarios')
+
+        # Validar documento único
+        if domiciliario.objects.filter(Documento=documento).exists():
+            messages.error(request, "El documento ya está registrado")
+            return redirect('crudDomiciliarios')
+
+        # Validar que el documento sea numérico y no muy largo
+        if not documento.isdigit():
+            messages.error(request, "El documento debe ser un número")
+            return redirect('crudDomiciliarios')
+        if len(documento) > 10:
+            messages.error(request, "El documento es demasiado largo")
+            return redirect('crudDomiciliarios')
+
+        rol_domiciliario = roles.objects.get(IdRol=2)
+        nuevo_domiciliario = domiciliario(
+            TipoDocumento=tipo_documento,
+            Documento=documento,
+            NombreDomiciliario=nombre_domiciliario,
+            PrimerApellido=primer_apellido,
+            SegundoApellido=segundo_apellido,
+            Celular=celular,
+            Ciudad=ciudad,
+            Correo=correo,
+            Contraseña=make_password(contraseña),
+            IdRol=rol_domiciliario
+        )
+        nuevo_domiciliario.save()
+        messages.success(request, "Domiciliario creado exitosamente")
+        return redirect('crudDomiciliarios')
+    return redirect('crudDomiciliarios')
 
 def editardomiciliario(request, id_domiciliario):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     domiciliario_obj = get_object_or_404(domiciliario, IdDomiciliario=id_domiciliario)
     
     if request.method == "POST":
@@ -543,6 +686,8 @@ def editardomiciliario(request, id_domiciliario):
     return render(request, 'crud/editar_domiciliario.html', {'domiciliario': domiciliario_obj})
 
 def borrardomiciliario(request, id_domiciliario):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     domiciliario_obj = domiciliario.objects.get(IdDomiciliario=id_domiciliario)
     domiciliario_obj.delete()
     return redirect('crudDomiciliarios')
@@ -558,6 +703,8 @@ def validar_nombre_producto(nombre):
     return None
 
 def insertarproducto(request):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     if request.method == "POST":
         nombre = request.POST.get('Nombre', '').strip()
         descripcion = request.POST.get('Descripcion', '').strip()
@@ -596,6 +743,8 @@ def insertarproducto(request):
     return render(request, 'crud/productos.html')
 
 def editarproducto(request, id_producto):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     producto_obj = get_object_or_404(producto, IdProducto=id_producto)
     if request.method == "POST":
         nombre = request.POST.get('Nombre', '').strip()
@@ -635,7 +784,10 @@ def editarproducto(request, id_producto):
         messages.success(request, "Producto modificado exitosamente")
         return redirect('crudProductos')
     return render(request, 'crud/editar_producto.html', {'producto': producto_obj})
+
 def borrarproducto(request, id_producto):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     producto_obj = get_object_or_404(producto, IdProducto=id_producto)
     producto_obj.delete()
     return redirect('crudProductos') # importa producto con minúscula si así está definido
@@ -749,14 +901,20 @@ def eliminar_cuenta(request):
 # endregion
 
 def crudCategorias(request):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     return render(request, 'crud/categorias.html')
 
 def crudSubCategorias(request):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     subcategorias = subcategoria.objects.all()
     categorias = categoria.objects.all()
     return render(request, 'crud/subcategorias.html', {'subcategorias': subcategorias, 'categorias': categorias})
 
 def crudProductos(request):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     productos_list = producto.objects.all().order_by('-IdProducto')
     subcategorias = subcategoria.objects.all()
     page_number = request.GET.get('page', 1)
@@ -768,6 +926,8 @@ def crudProductos(request):
     })
 
 def crudDomiciliarios(request):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     domiciliarios_list = domiciliario.objects.filter(IdRol=2).order_by('-IdDomiciliario')
     page_number = request.GET.get('page', 1)
     paginator = Paginator(domiciliarios_list, 5)
@@ -776,6 +936,8 @@ def crudDomiciliarios(request):
 
 
 def crudUsuarios(request):
+    if request.session.get('role') != 1:
+        return mostrar_404(request)
     usuarios_list = usuario.objects.filter(idRol=3).order_by('-IdUsuario')
     page_number = request.GET.get('page', 1)
     paginator = Paginator(usuarios_list, 5)
@@ -813,7 +975,7 @@ def lencerias(request):
 
 def vibradores(request):
     # Obtener la categoría de vibradores
-    categoria_vibrador = categoria.objects.get(NombreCategoria='vibradores')  # Cambiado a get
+    categoria_vibrador = categoria.objects.get(NombreCategoria='vibradores')  
     
     # Filtrar productos que pertenecen a la categoría de vibradores o a sus subcategorías
     productos = producto.objects.filter(IdSubCategoria__categoria=categoria_vibrador)
@@ -822,7 +984,7 @@ def vibradores(request):
 
 def disfraces(request):
     # Obtener la categoría de disfraces
-    categoria_disfraces = categoria.objects.get(NombreCategoria='Lencería')  # Cambiado a 'Lencería'
+    categoria_disfraces = categoria.objects.get(NombreCategoria='Lencería')  
     
     # Filtrar productos que pertenecen a la categoría de lencería o a sus subcategorías
     productos = producto.objects.filter(IdSubCategoria__categoria=categoria_disfraces)
@@ -831,7 +993,7 @@ def disfraces(request):
 
 def dildos(request):
     # Obtener la categoría de dildos
-    categoria_dildo = categoria.objects.get(NombreCategoria='Dildos')  # Cambiado a get
+    categoria_dildo = categoria.objects.get(NombreCategoria='Dildos')  
     
     # Filtrar productos que pertenecen a la categoría de dildos o a sus subcategorías
     productos = producto.objects.filter(IdSubCategoria__categoria=categoria_dildo)
@@ -839,5 +1001,8 @@ def dildos(request):
     return render(request, 'carrito/dildos.html', {'productos': productos})
 
 def productosCarrito(request):
-    productos = producto.objects.all().order_by('-IdProducto')  # Obtener todos los productos
+    productos = producto.objects.all().order_by('-IdProducto')  
     return render(request, 'carrito/productos.html', {'productos': productos})
+
+def mostrar_404(request):
+    return render(request, '404.html', status=404)
