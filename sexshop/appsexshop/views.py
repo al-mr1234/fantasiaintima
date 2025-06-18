@@ -807,7 +807,7 @@ def lencerias(request):
     categoria_lenceria = categoria.objects.get(NombreCategoria='Lencería')
     
     # Filtrar productos que pertenecen a la categoría de lencería o a sus subcategorías
-    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_lenceria)
+    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_lenceria).order_by('-IdProducto')
     
     return render(request, 'carrito/lencerias.html', {'productos': productos})
 
@@ -816,16 +816,16 @@ def vibradores(request):
     categoria_vibrador = categoria.objects.get(NombreCategoria='vibradores')  # Cambiado a get
     
     # Filtrar productos que pertenecen a la categoría de vibradores o a sus subcategorías
-    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_vibrador)
+    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_vibrador).order_by('-IdProducto')
     
     return render(request, 'carrito/vibradores.html', {'productos': productos})
 
 def disfraces(request):
     # Obtener la categoría de disfraces
-    categoria_disfraces = categoria.objects.get(NombreCategoria='Lencería')  # Cambiado a 'Lencería'
+    categoria_disfraces = categoria.objects.get(NombreCategoria='disfraces')  # Cambiado a 'Lencería'
     
     # Filtrar productos que pertenecen a la categoría de lencería o a sus subcategorías
-    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_disfraces)
+    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_disfraces).order_by('-IdProducto')
     
     return render(request, 'carrito/disfraces.html', {'productos': productos})
 
@@ -834,10 +834,11 @@ def dildos(request):
     categoria_dildo = categoria.objects.get(NombreCategoria='Dildos')  # Cambiado a get
     
     # Filtrar productos que pertenecen a la categoría de dildos o a sus subcategorías
-    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_dildo)
+    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_dildo).order_by('-IdProducto')
     
     return render(request, 'carrito/dildos.html', {'productos': productos})
 
 def productosCarrito(request):
-    productos = producto.objects.all().order_by('-IdProducto')  # Obtener todos los productos
-    return render(request, 'carrito/productos.html', {'productos': productos})
+    productos = producto.objects.all().order_by('-IdProducto') # Obtener todos los productos  
+    categorias = categoria.objects.prefetch_related('subcategoria_set').all()
+    return render(request, 'carrito/productos.html', {'productos': productos,'categorias': categorias, })

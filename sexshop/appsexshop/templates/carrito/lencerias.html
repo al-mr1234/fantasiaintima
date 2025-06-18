@@ -1,5 +1,6 @@
 {% load static %}
-<!DOCTYPE html>
+{% include 'inc/header.html'%}
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11,73 +12,73 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
-            <a class="navbar-brand me-2">
-                <img src="{% static 'img/carrito/Copia_de_Fantasia.png' %}"  class="logoPrincipal" alt="Logo" style="height: 60px; width: 95px">
-            </a>
+   <!-- NAVBAR SUPERIOR -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <a class="navbar-brand me-2">
+      <img src="{% static 'img/carrito/Copia_de_Fantasia.png' %}" class="logoPrincipal" alt="Logo" style="height: 60px; width: 95px">
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
 
-            <!-- Botón hamburguesa -->
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" style="color: #f5365c;" href={% url 'Ladingpage' %}>Inicio</a></li>
+            <li class="nav-item"><a class="nav-link active" href={%url 'lencerias'%}>Lencerías</a></li>
+            <li class="nav-item"><a class="nav-link" href={% url 'vibradores' %}>Vibradores</a></li>
+            <li class="nav-item"><a class="nav-link" href={% url 'disfraces' %}>Disfraces</a></li>
+            <li class="nav-item"><a class="nav-link" href={%url 'dildos'%}>Dildos</a></li>
+<li class="nav-item">
+            <a class="nav-link" href="{% url 'productosCarrito' %}">Todos los productos</a>
+          </li>
+        </ul>
 
-            <!-- Contenido del menú colapsable -->
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <!-- Buscador visible solo en pantallas pequeñas -->
-                <div class="d-lg-none w-100 my-2">
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <svg viewBox="0 0 24 24" aria-hidden="true" class="search-icon" style="width: 16px; height: 16px;">
-                                <g>
-                                    <path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z"></path>
-                                </g>
-                            </svg>
-                        </span>
-                        <input id="query-mobile" class="form-control" type="search" placeholder="Buscar Producto" name="searchbar">
-                    </div>
-                </div>
 
-                <!-- Enlaces del menú -->
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item"><a class="nav-link"href={% url 'Ladingpage' %}>Inicio</a></li>
-                    <li class="nav-item"><a class="nav-link" href={%url 'lencerias'%}>Lencerías</a></li>
-                    <li class="nav-item"><a class="nav-link" href={% url 'vibradores' %}>Vibradores</a></li>
-                    <li class="nav-item"><a class="nav-link" href={% url 'disfraces' %}>Disfraces</a></li>
-                    <li class="nav-item"><a class="nav-link" href={%url 'dildos'%}>Dildos</a></li>
-                    <li class="nav-item"><a class="nav-link" href={%url 'productosCarrito'%}>Todos los productos</a></li>
-                </ul>
-
-                <!-- Buscador visible solo en pantallas grandes -->
-                <div class="group d-none d-lg-flex align-items-center me-2" id="search-group">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" class="search-icon">
-                        <g>
-                            <path d="M21.53 20.47l-3.66-3.66C19.195 15.24 20 13.214 20 11c0-4.97-4.03-9-9-9s-9 4.03-9 9 4.03 9 9 9c2.215 0 4.24-.804 5.808-2.13l3.66 3.66c.147.146.34.22.53.22s.385-.073.53-.22c.295-.293.295-.767.002-1.06zM3.5 11c0-4.135 3.365-7.5 7.5-7.5s7.5 3.365 7.5 7.5-3.365 7.5-7.5 7.5-7.5-3.365-7.5-7.5z"></path>
-                        </g>
-                    </svg>
-                    <input id="query" class="input ms-2" type="search" placeholder="Buscar Producto" name="searchbar">
-                </div>
-
-                <!-- Botones -->
-                <button class="btn btn-outline-secondary me-2">
-                    <a href="{% url 'carrito' %}" style="text-decoration: none; color: inherit;">
-                        <i class="fas fa-shopping-cart"></i> <span id="cartCount">0</span>
-                    </a>
-                </button>
-                <button class="btn btn-outline-secondary">
-                    <i class="fas fa-user"></i>
-                </button>
-            </div>
+      <div class="d-flex align-items-center">
+        <div class="search-container me-3">
+          <input id="query" type="search" class="form-control" placeholder="Buscar producto..." autocomplete="off">
         </div>
-    </nav>
+        <a href="{% url 'carrito' %}" class="btn btn-outline-secondary me-2">
+          <i class="fas fa-shopping-cart"></i> <span id="cartCount">0</span>
+        </a>
+        <button class="btn btn-outline-secondary">
+           <a href="{% url 'perfiles' %}" style="color: #f5365c;"><i class="fas fa-user"></i> </a>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+
+
     <h4 class="titulosLading" style="color:#f5365c; text-align:center;"><hr> ✰ Colecciones destacadas ✰<p style="font-size: 14px; color: #000000;">¡Donde el placer Comienza!</p><hr></h4>
 
+   <!-- Productos -->
     <div class="container mt-5">
-        <div class="row" id="productList">
-            <!-- Productos cargados dinámicamente -->
+        <div class="row" id="productsRow">
+            {% for producto in productos %}
+            <div class="col-md-3 product-card">
+                <div class="card" data-id="{{ producto.IdProducto }}" data-nombre="{{ producto.Nombre|escapejs }}" data-precio="{{ producto.Precio }}" data-imagen="{{ producto.Img.url }}" data-descripcion="{{ producto.Descripcion|escapejs }}" data-cantidad="{{ producto.Cantidad }}" data-rating="{{ producto.rating|default:1 }}" data-review-count="{{ producto.review_count|default:1 }}">
+        <img src="{{ producto.Img.url }}" class="card-img-top" alt="{{ producto.Nombre }}">
+        <div class="card-body">
+          <h5 class="card-title">{{ producto.Nombre }}</h5>
+          <p class="card-text">Precio: ${{ producto.Precio|floatformat:0 }}</p>
+          <div class="rating">
+            {% for i in "54321" %}
+              <input value="{{ i }}" name="rate{{ producto.IdProducto }}" id="star{{ producto.IdProducto }}{{ i }}" type="radio" {% if producto.rating|default:4 >= i %}checked{% endif %}>
+            {% endfor %}
+          </div>
+          <button class="btn add-to-cart-btn" style="background-color: #f5365c; color: white;"><i class="fas fa-shopping-cart"></i> Añadir al carrito</button>
         </div>
+      </div>
     </div>
+    {% empty %}
+    <p>No hay productos disponibles.</p>
+    {% endfor %}
+  </div>
+</div>
+
 
     <!-- Modal para Detalles del Producto -->
     <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
@@ -98,8 +99,12 @@
         </div>
     </div>
 
+    <div id="alerta-carrito" class="alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3 text-center d-none shadow rounded-3 px-4 py-2" style="z-index: 9999; font-size: 1rem;">
+  Producto agregado al carrito 💖
+</div>
+
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'js/carrito/lenceria.js' %}"></script>
+    <script src="{% static 'js/carrito/catalogo.js' %}"></script>
 </body>
 </html>
