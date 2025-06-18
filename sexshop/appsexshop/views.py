@@ -171,21 +171,21 @@ def actualizarsubcategoria(request, id_subcategoria):
         error = validar_nombre_subcategoria(nombre)
         if error:
             messages.error(request, error)
-            return redirect('crudSubCategorias')
+            return redirect('listadosubcategorias')
         # Sin cambios
         if nombre == subcat.NombresubCategoria and int(categoria_id) == subcat.categoria_id:
             messages.info(request, "Sin cambios realizados")
-            return redirect('crudSubCategorias')
+            return redirect('listadosubcategorias')
         # Duplicado
         if subcategoria.objects.filter(NombresubCategoria__iexact=nombre, categoria_id=categoria_id).exclude(IdSubCategoria=id_subcategoria).exists():
             messages.error(request, "Subcategoría ya existe")
-            return redirect('crudSubCategorias')
+            return redirect('listadosubcategorias')
         subcat.NombresubCategoria = nombre
         subcat.categoria_id = categoria_id
         subcat.save()
         messages.success(request, "Subcategoría actualizada exitosamente")
-        return redirect('crudSubCategorias')
-    return redirect('crudSubCategorias')
+        return redirect('listadosubcategorias')
+    return redirect('listadosubcategorias')
 
 def borrarsubcategoria(request, id_subcategoria):
     if request.session.get('role') != 1:
@@ -194,10 +194,10 @@ def borrarsubcategoria(request, id_subcategoria):
     # Bloquear si tiene productos relacionados
     if producto.objects.filter(IdSubCategoria=subcat).exists():
         messages.error(request, "Subcategoría en uso")
-        return redirect('crudSubCategorias')
+        return redirect('listadosubcategorias')
     subcat.delete()
     messages.success(request, "Subcategoría eliminada")
-    return redirect('crudSubCategorias')
+    return redirect('listadosubcategorias')
 #endregion
 
 
