@@ -17,9 +17,10 @@ function mostrarCarrito() {
 
   if (carrito.length === 0) {
     cartContainer.innerHTML = '<p class="text-center">Tu carrito está vacío.</p>';
-    totalAmount.textContent = '$0.00';
+    totalAmount.textContent = '$0';
     return;
   }
+
 
   carrito.forEach((producto, index) => {
     const item = document.createElement('div');
@@ -31,11 +32,11 @@ function mostrarCarrito() {
           <div>
             <h5 class="card-title mb-1">${producto.nombre}</h5>
             <p class="card-text mb-1">${producto.descripcion || ''}</p>
-            <p class="card-text mb-1">Precio unitario: $${producto.precio.toFixed(2)}</p>
+            <p class="card-text mb-1">Precio unitario: $${producto.precio.toLocaleString('es-CL')}</p>
           </div>
         </div>
         <div class="text-end" style="min-width: 160px;">
-          <p class="mb-2 fw-bold">$${(producto.precio * producto.cantidad).toFixed(2)}</p>
+          <p class="mb-2 fw-bold">$${(producto.precio * producto.cantidad).toLocaleString('es-CL')}</p>
           <div class="d-flex flex-column align-items-end gap-2">
             <div class="d-flex align-items-center gap-2 mb-2">
               <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad(${index}, -1)">-</button>
@@ -53,7 +54,9 @@ function mostrarCarrito() {
     total += producto.precio * producto.cantidad;
   });
 
-  totalAmount.textContent = `$${total.toFixed(2)}`;
+  totalAmount.textContent = `$${total.toLocaleString('es-CL')}`;
+
+  carrito.sort((a, b) => b.agregadoEn - a.agregadoEn); 
 }
 
 // Ahora usamos el INDEX y no el ID para evitar errores con productos iguales
@@ -74,7 +77,7 @@ function cambiarCantidad(index, cambio) {
 
 function clearCart() {
   Swal.fire({
-    title: '¿Estás segura?',
+    title: '¿Estás seguro?',
     text: 'Esto vaciará todo tu carrito.',
     icon: 'warning',
     showCancelButton: true,

@@ -1,12 +1,19 @@
 const carritoKey = 'carrito';
 
-const obtenerCarrito = () => JSON.parse(localStorage.getItem(carritoKey) || '[]');
 const guardarCarrito = carrito => localStorage.setItem(carritoKey, JSON.stringify(carrito));
+const obtenerCarrito = () => JSON.parse(localStorage.getItem(carritoKey) || '[]');
 
 const actualizarIconoCarrito = () => {
   const total = obtenerCarrito().reduce((acc, item) => acc + item.cantidad, 0);
   const icono = document.getElementById('cartCount');
   if (icono) icono.textContent = total;
+
+  document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    actualizarIconoCarrito();
+  }
+  });
+  
 };
 
 const agregarAlCarrito = (idProducto, nombre, precio, cantidad, imagen) => {
@@ -14,10 +21,22 @@ const agregarAlCarrito = (idProducto, nombre, precio, cantidad, imagen) => {
   const carrito = obtenerCarrito();
   const prod = carrito.find(p => p.idProducto === idProducto);
   if (prod) prod.cantidad += cantidad;
-  else carrito.push({ idProducto, nombre, precio, cantidad, imagen });  // Guardamos la imagen
+  else carrito.push({ idProducto, nombre, precio, cantidad, imagen, agregadoEn: Date.now() });
   guardarCarrito(carrito);
   actualizarIconoCarrito();
   console.log('Producto agregado:', carrito);
+
+const alerta = document.getElementById('alerta-carrito');
+if (alerta) {
+  alerta.classList.remove('d-none');
+  alerta.classList.add('show');
+
+  setTimeout(() => {
+    alerta.classList.remove('show');
+    alerta.classList.add('d-none');
+  }, 1000);
+}
+
 };
 
 function getStarsHTML(rating) {
