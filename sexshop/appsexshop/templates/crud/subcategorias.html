@@ -174,10 +174,10 @@
                   <div class="mb-3">
                       <label for="inputState" class="form-label">Elige La Categoría</label>
                       <select id="inputState" name="categoria_id" class="form-select" required>
-                          <option value="">Seleccione una categoría</option>
-                          {% for categoria in categorias %}
-                              <option value="{{ categoria.IdCategoria }}">{{ categoria.NombreCategoria }}</option>
-                          {% endfor %}
+                        <option value="" disabled selected>Seleccione una categoría</option>
+                        {% for categoria in categorias %}
+                          <option value="{{ categoria.IdCategoria }}">{{ categoria.NombreCategoria }}</option>
+                        {% endfor %}
                       </select>
                   </div>
                   <div class="mb-3">

@@ -25,7 +25,6 @@ def LadingPage(request):
 
     def agrupar_productos(productos, grupo_de):
         return [productos[i:i+grupo_de] for i in range(0, len(productos), grupo_de)]
-
     productos_agrupados = agrupar_productos(list(productos), 4)
 
     return render(request, 'LadingPage.html', {
@@ -472,7 +471,6 @@ def nueva_contrasena(request):
             messages.error(request, 'Ocurrió un error al actualizar la contraseña.')
     
     return render(request, 'login/nuevaContraseña.html')
-
 
 def insertardomiciliario(request):
     if request.method == "POST":

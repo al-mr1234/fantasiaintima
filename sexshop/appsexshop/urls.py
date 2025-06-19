@@ -70,7 +70,6 @@ urlpatterns = [
     path('productos', productosCarrito, name='productosCarrito'),
     path('eliminar-cuenta/', eliminar_cuenta, name='eliminar_cuenta'),
     path('guardar-calificacion/', guardar_calificacion, name='guardar_calificacion'),
-   
 ]
 
 if settings.DEBUG:
