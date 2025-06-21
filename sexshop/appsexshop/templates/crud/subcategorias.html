@@ -172,8 +172,8 @@
                   {% csrf_token %}
                   <div class="mb-3">
                       <label for="inputState" class="form-label">Elige La Categoría</label>
-                      <select id="inputState" name="categoria_id" class="form-select">
-                          <option selected disabled>Selecciona una categoría</option>
+                      <select id="inputState" name="categoria_id" class="form-select" required>
+                          <option value="" selected disabled>Selecciona una categoría</option>
                           {% for categoria in categorias %}
                               <option value="{{ categoria.IdCategoria }}">{{ categoria.NombreCategoria }}</option>
                           {% endfor %}

@@ -172,7 +172,7 @@ def borrarsubcategoria(request, id_subcategoria):
         return redirect('crudSubCategorias')
     subcat.delete()
     messages.success(request, "Subcategoría eliminada")
-    return redirect('crudSubCategorias')
+    return redirect('listadosubcategorias')
 #endregion
 
 
