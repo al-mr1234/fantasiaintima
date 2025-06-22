@@ -28,7 +28,7 @@
     <div class="profile-section">
         <div class="profile-container">
           <label for="profile-pic" class="profile-pic-label">
-                <img src="{% static 'img/perfil.png' %}" alt="Profile" id="profile-img" class="profile-pic">
+                <img src="{{ imagen_perfil }}" alt="Profile" id="profile-img" class="profile-pic">
             </label>
         </div>
 
@@ -141,12 +141,6 @@
    
   // Al cargar la página, revisa si ya hay una imagen guardada en localStorage y activa el botón "Mi perfil"
   window.onload = function() {
-      // Cargar la imagen del perfil desde localStorage (si existe)
-      var savedImage = localStorage.getItem('profileImage');
-      if (savedImage) {
-          document.getElementById('profile-img').src = savedImage;
-      }
-
       // Resaltar automáticamente "Mi perfil" al cargar la página
       const miPerfil = document.getElementById('perfil');
       miPerfil.classList.add('active');
@@ -187,6 +181,59 @@
         });
     });
 });
+
+function loadFile(event) {
+    var input = event.target;
+    if (input.files && input.files[0]) {
+        var formData = new FormData();
+        formData.append('profile-pic', input.files[0]);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch("{% url 'perfiles' %}", {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('profile-img').src = data.new_image_url;
+            } else {
+                alert('Error al subir la imagen');
+            }
+        })
+        .catch(() => alert('Error al subir la imagen'));
+    }
+}
+
+function confirmRemovePhoto() {
+    Swal.fire({
+        title: '¿Eliminar foto de perfil?',
+        text: "¿Seguro que quieres eliminar tu foto de perfil?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f5365c',
+        cancelButtonColor: 'black',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch("{% url 'eliminar_foto_perfil' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('profile-img').src = data.new_image_url;
+                } else {
+                    alert('No se pudo eliminar la foto');
+                }
+            });
+        }
+    });
+}
 </script> 
 </body>
 </html>
