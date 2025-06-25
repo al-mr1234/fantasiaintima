@@ -293,15 +293,18 @@
                   <div class="card-body" style="min-height: 150px;">
                     <h5 class="card-title">{{ prod.Nombre }}</h5>
                     <p class="card-text">{{ prod.Descripcion }}<br><br>${{ prod.Precio|floatformat:"0" }}</p>
-                    <div class="rating">
-                      {% for i in "54321" %}
-                        <input value="{{ i }}" name="rate{{ prod.IdProducto }}" id="star{{ i }}_{{ prod.IdProducto }}" type="radio" {% if i == "3" %}checked{% endif %}>
-                        <label for="star{{ i }}_{{ prod.IdProducto }}"></label>
-                      {% endfor %}
-                    </div>
-                    <a href="#" class="btn btn-danger add-to-cart-btn">
-                      <i class="fa-solid fa-cart-shopping"></i>
-                    </a>
+                    <!-- Aquí puedes agregar una descripción del producto si lo deseas -->
+          <p class="card-text text-success" style="font-size: 0.95em;">
+  Stock disponible: {{ producto.Cantidad }}
+</p>
+          <div class="rating">
+            {% for i in "54321" %}
+              <input value="{{ i }}" name="rate{{ producto.IdProducto }}" id="star{{ producto.IdProducto }}{{ i }}" type="radio" {% if producto.rating|default:4 >= i %}checked{% endif %}>
+            {% endfor %}
+          </div>
+          <button class="btn add-to-cart-btn" style="background-color: #f5365c; color: white;" {% if producto.Cantidad == 0 %}disabled{% endif %}>
+  <i class="fas fa-shopping-cart"></i> Añadir al carrito
+</button>
                   </div>
                 </div>
               </div>
