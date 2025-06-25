@@ -7,16 +7,35 @@ const actualizarIconoCarrito = () => {
   const total = obtenerCarrito().reduce((acc, item) => acc + item.cantidad, 0);
   const icono = document.getElementById('cartCount');
   if (icono) icono.textContent = total;
+
+  document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    actualizarIconoCarrito();
+  }
+  });
+  
 };
 
 const agregarAlCarrito = (idProducto, nombre, precio, cantidad, imagen, descripcion) => {
   console.log("agregarAlCarrito llamado con:", idProducto, nombre, precio, cantidad, imagen, descripcion);
   const carrito = obtenerCarrito();
-  const prod = carrito.find(p => p.idProducto === idProducto);
+  const prod = carrito.find(p => p.IdProducto === idProducto);
+  // Busca el stock real del producto desde el DOM (data-cantidad)
+  let stock = 1;
+  // Busca el producto en el catálogo (puedes ajustar el selector según tu HTML)
+  const card = document.querySelector(`.card[data-id="${idProducto}"]`);
+  if (card) {
+    stock = parseInt(card.getAttribute('data-cantidad')) || 1;
+  }
   if (prod) {
-    prod.cantidad += cantidad;
+    if (prod.cantidad + cantidad > stock) {
+      prod.cantidad = stock;
+    } else {
+      prod.cantidad += cantidad;
+    }
+    prod.stock = stock;
   } else {
-    carrito.push({ idProducto, nombre, precio, cantidad, imagen, descripcion });
+    carrito.push({ IdProducto: idProducto, nombre, precio, cantidad, imagen, descripcion, stock });
   }
   guardarCarrito(carrito);
   actualizarIconoCarrito();
@@ -107,12 +126,26 @@ function showProductDetails(card) {
   const quantityInput = document.getElementById("productQuantity");
 
   increaseBtn.addEventListener("click", () => {
-    quantityInput.value = parseInt(quantityInput.value) + 1;
+    const maxStock = parseInt(document.getElementById("stockQuantity").textContent) || 1;
+    let current = parseInt(quantityInput.value);
+    if (current < maxStock) {
+      quantityInput.value = current + 1;
+    }
   });
 
   decreaseBtn.addEventListener("click", () => {
     if (quantityInput.value > 1) {
       quantityInput.value = parseInt(quantityInput.value) - 1;
+    }
+  });
+    // Validación para que la cantidad no supere el stock
+  quantityInput.addEventListener("input", () => {
+    const maxStock = parseInt(document.getElementById("stockQuantity").textContent) || 1;
+    if (parseInt(quantityInput.value) > maxStock) {
+      quantityInput.value = maxStock;
+    }
+    if (parseInt(quantityInput.value) < 1 || isNaN(quantityInput.value)) {
+      quantityInput.value = 1;
     }
   });
 

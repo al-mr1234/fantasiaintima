@@ -24,6 +24,9 @@ function mostrarCarrito() {
   carrito.sort((a, b) => b.IdProducto - a.IdProducto);
 
   carrito.forEach((producto, index) => {
+    // Deshabilitar "+" si cantidad == stock
+    const plusDisabled = producto.cantidad >= producto.stock ? 'disabled' : '';
+    const minusDisabled = producto.cantidad <= 1 ? 'disabled' : '';
     const item = document.createElement('div');
     item.className = 'card mb-3';
     item.innerHTML = `
@@ -33,18 +36,18 @@ function mostrarCarrito() {
           <div>
             <h5 class="card-title mb-1">${producto.nombre}</h5>
             <p class="card-text mb-1">${producto.descripcion || ''}</p>
-            <p class="card-text mb-1">Precio unitario: $${producto.precio.toFixed(2)}</p>
+            <p class="card-text mb-1">Precio unitario: $${producto.precio.toLocaleString('es-CL')}</p>
           </div>
         </div>
         <div class="text-end" style="min-width: 160px;">
-          <p class="mb-2 fw-bold">$${(producto.precio * producto.cantidad).toFixed(2)}</p>
+          <p class="mb-2 fw-bold">$${(producto.precio * producto.cantidad).toLocaleString('es-CL')}</p>
           <div class="d-flex flex-column align-items-end gap-2">
             <div class="d-flex align-items-center gap-2 mb-2">
-              <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad(${index}, -1)">-</button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad('${producto.IdProducto}', -1)" ${minusDisabled}>-</button>
               <span>${producto.cantidad}</span>
-              <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad(${index}, 1)">+</button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad('${producto.IdProducto}', 1)" ${plusDisabled}>+</button>
             </div>
-            <button class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${index})">
+            <button class="btn btn-sm btn-danger" onclick="eliminarDelCarrito('${producto.IdProducto}')">
               <i class="fas fa-trash-alt"></i>
             </button>
           </div>
@@ -55,23 +58,30 @@ function mostrarCarrito() {
     total += producto.precio * producto.cantidad;
   });
 
-  totalAmount.textContent = `$${total.toFixed(2)}`;
+  totalAmount.textContent = `$${total.toLocaleString('es-CL')}`;
 }
 
-// Ahora usamos el INDEX y no el ID para evitar errores con productos iguales
-function eliminarDelCarrito(index) {
+// Cambia la función para eliminar por IdProducto
+function eliminarDelCarrito(idProducto) {
   let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-  carrito.splice(index, 1);
+  carrito = carrito.filter(p => p.IdProducto != idProducto);
   localStorage.setItem('carrito', JSON.stringify(carrito));
   mostrarCarrito();
 }
 
-function cambiarCantidad(index, cambio) {
+function cambiarCantidad(idProducto, cambio) {
   let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-  carrito[index].cantidad += cambio;
-  if (carrito[index].cantidad < 1) carrito[index].cantidad = 1;
-  localStorage.setItem('carrito', JSON.stringify(carrito));
-  mostrarCarrito();
+  const prod = carrito.find(p => p.IdProducto == idProducto);
+  if (prod) {
+    // Limitar la cantidad máxima al stock disponible
+    const maxStock = prod.stock !== undefined ? prod.stock : 99;
+    let nuevaCantidad = prod.cantidad + cambio;
+    if (nuevaCantidad < 1) nuevaCantidad = 1;
+    if (nuevaCantidad > maxStock) nuevaCantidad = maxStock;
+    prod.cantidad = nuevaCantidad;
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    mostrarCarrito();
+  }
 }
 
 function clearCart() {

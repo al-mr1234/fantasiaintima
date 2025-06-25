@@ -1,16 +1,28 @@
-.pagination {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
+#productList .card {
+  height: 100%;
+  display: flex;
 }
 
-.pagination a {
-    margin: 0 5px;
-    text-decoration: none;
-    color: #007bff;
+#productList .card-body {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.pagination .current {
-    margin: 0 5px;
-    font-weight: bold;
+#productList .card-body h5 {
+  min-height: 1rem; 
 }
+
+#productList .card-body .card-text {
+  min-height: 10px; }
+
+#productList .card .card-img-top {
+  height: 150px;
+  object-fit: cover;
+}
+
+#productList .add-to-cart-btn {
+  font-size: 1.1em;
+  width: 200px;
+  align-self: center; }

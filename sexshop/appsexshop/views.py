@@ -675,7 +675,7 @@ def guardar_calificacion(request):
             print(f"Error interno: {str(e)}")
             return JsonResponse({'success': False, 'mensaje': str(e)})
 
-    return JsonResponse({'success': False, 'mensaje': 'Método no permitido'})
+   
 
     
 

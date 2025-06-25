@@ -14,7 +14,7 @@
 </head>
 <body>
 
-<!-- NAVBAR SUPERIOR -->
+
 <!-- NAVBAR SUPERIOR -->
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
   <div class="container-fluid">
@@ -95,12 +95,18 @@
         <div class="card-body">
           <h5 class="card-title">{{ producto.Nombre }}</h5>
           <p class="card-text">Precio: ${{ producto.Precio|floatformat:0 }}</p>
+            <!-- Aquí puedes agregar una descripción del producto si lo deseas -->
+          <p class="card-text text-success" style="font-size: 0.95em;">
+  Stock disponible: {{ producto.Cantidad }}
+</p>
           <div class="rating">
             {% for i in "54321" %}
               <input value="{{ i }}" name="rate{{ producto.IdProducto }}" id="star{{ producto.IdProducto }}{{ i }}" type="radio" {% if producto.rating|default:4 >= i %}checked{% endif %}>
             {% endfor %}
           </div>
-          <button class="btn add-to-cart-btn" style="background-color: #f5365c; color: white;"><i class="fas fa-shopping-cart"></i> Añadir al carrito</button>
+          <button class="btn add-to-cart-btn" style="background-color: #f5365c; color: white;" {% if producto.Cantidad == 0 %}disabled{% endif %}>
+  <i class="fas fa-shopping-cart"></i> Añadir al carrito
+</button>
         </div>
       </div>
     </div>
