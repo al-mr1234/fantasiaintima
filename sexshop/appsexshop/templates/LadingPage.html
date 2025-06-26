@@ -197,13 +197,13 @@
         </button>
     </div>
   
+
+ 
+
     <!--cards productos Destacados-->
     <h4 class="titulosLading" style="color:#f5365c;  text-align:center; "><hr> ✰ Colecciones destacadas ✰<p style="font-size: 14px; color: #000000;">¡Descubre tu placer!</p><hr></h4>
     <div class="featured-collections ">
-        
-
         <!-- card 1-->
-  
         <div class="card1">
           <div class="image-container">
             <img src="{% static 'img/producto1.png' %}" class="card-img-top" alt="..." style="height: 150px; object-fit: cover;">
@@ -353,8 +353,6 @@
 
    
 
-
-
 <!-- Search Results Container -->
 <div id="search-results-container" class="search-results-container">
     <div class="row" id="search-results-row"></div>
@@ -461,87 +459,109 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-    AOS.init();
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('query');
-        const searchResultsContainer = document.getElementById('search-results-container');
-        const searchResultsRow = document.getElementById('search-results-row');
-        const mainContent = document.querySelector('.main-content');
-        const body = document.body;
-        
-        // Datos de productos
-        const productos = [
-            {% for producto in productos %}
-            {
-                id: {{ producto.IdProducto }},
-                nombre: "{{ producto.Nombre }}",
-                descripcion: "{{ producto.Descripcion }}",
-                precio: {{ producto.Precio }},
-                imagen: "{% if producto.Img %}{{ producto.Img.url }}{% else %}{% static 'img/default.png' %}{% endif %}",
-                categoria: "{{ producto.IdSubCategoria.categoria.NombreCategoria }}",
-                subcategoria: "{{ producto.IdSubCategoria.NombresubCategoria }}"
-            },
-            {% endfor %}
-        ];
-        
-        searchInput.addEventListener('focus', function() {
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('query');
+    const searchResultsContainer = document.getElementById('search-results-container');
+    const searchResultsRow = document.getElementById('search-results-row');
+    const body = document.body;
+
+    const productos = [
+        {% for producto in productos %}
+        {
+            id: {{ producto.IdProducto }},
+            nombre: "{{ producto.Nombre|escapejs }}",
+            descripcion: "{{ producto.Descripcion|escapejs }}",
+            precio: {{ producto.Precio }},
+            cantidad: {{ producto.Cantidad }}, 
+            rating: {{ producto.Rating|default:3 }},
+            imagen: "{% if producto.Img %}{{ producto.Img.url }}{% else %}{% static 'img/default.png' %}{% endif %}",
+            categoria: "{{ producto.IdSubCategoria.categoria.NombreCategoria|default:''|escapejs }}",
+            subcategoria: "{{ producto.IdSubCategoria.NombresubCategoria|default:''|escapejs }}"
+        },
+        {% endfor %}
+    ];
+
+    searchInput.addEventListener('input', function () {
+        const searchTerm = this.value.toLowerCase().trim();
+        searchResultsRow.innerHTML = '';
+
+        if (searchTerm.length > 0) {
             body.classList.add('search-active');
             searchResultsContainer.style.display = 'block';
-            searchResultsRow.innerHTML = '';
-        });
-        
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            
-            if (searchTerm.length > 0) {
-                body.classList.add('search-active');
-                searchResultsContainer.style.display = 'block';
-                searchResultsRow.innerHTML = '';
-                
-                const filteredProducts = productos.filter(producto => 
-                    producto.nombre.toLowerCase().includes(searchTerm) ||
-                    producto.descripcion.toLowerCase().includes(searchTerm) ||
-                    producto.categoria.toLowerCase().includes(searchTerm) ||
-                    producto.subcategoria.toLowerCase().includes(searchTerm)
-                );
-                
-                if (filteredProducts.length > 0) {
-                    filteredProducts.forEach(producto => {
-                        const card = document.createElement('div');
-                        card.className = 'col-md-3';
-                        card.innerHTML = `
-                            <div class="card search-product-card">
-                                <img src="${producto.imagen}" class="card-img-top" alt="${producto.nombre}" style="height: 150px; object-fit: cover;">
-                                <div class="card-body" style="min-height: 150px;">
-                                    <h5 class="card-title">${producto.nombre}</h5>
-                                    <p class="card-text">${producto.descripcion.substring(0, 50)}...<br><br> $${producto.precio}</p>
-                                    <button class="btn btn-danger add-to-cart-btn" data-name="${producto.nombre}" data-price="${producto.precio}" data-image="${producto.imagen}">
-                                        <i class="fas fa-shopping-cart"></i> Añadir al carrito
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                        searchResultsRow.appendChild(card);
-                    });
-                } else {
-                    searchResultsRow.innerHTML = '<p class="text-center">No se encontraron productos que coincidan con tu búsqueda.</p>';
-                }
+
+            const filteredProducts = productos.filter(p =>
+                p.nombre.toLowerCase().includes(searchTerm) ||
+                p.descripcion.toLowerCase().includes(searchTerm) ||
+                p.categoria.toLowerCase().includes(searchTerm) ||
+                p.subcategoria.toLowerCase().includes(searchTerm)
+            );
+
+              if (filteredProducts.length > 0) {
+                  filteredProducts.forEach(producto => {
+      const cardWrapper = document.createElement('div');
+      cardWrapper.className = 'col-12 col-md-3 mb-4 d-flex justify-content-center';
+
+      const cantidad = producto.cantidad || 0;
+      const rating = producto.rating || 3;
+
+     cardWrapper.innerHTML = `
+  <div class="card d-flex flex-column" style="width: 18rem; box-shadow: 10px 10px 10px black; height: 100%;"
+      data-id="${producto.id}"
+      data-nombre="${producto.nombre}"
+      data-precio="${producto.precio}"
+      data-imagen="${producto.imagen}"
+      data-descripcion="${producto.descripcion}"
+      data-cantidad="${producto.cantidad}"
+      data-rating="${rating}">
+      
+      <img src="${producto.imagen}" class="card-img-top" alt="${producto.nombre}" style="height: 150px; object-fit: cover;">
+
+      <div class="card-body d-flex flex-column justify-content-between">
+          <div>
+            <h5 class="card-title">${producto.nombre}</h5>
+            <p class="card-text">${producto.descripcion.substring(0, 60)}...<br><br>$${producto.precio}</p>
+            <p class="card-text text-success" style="font-size: 0.95em;">
+                Stock disponible: ${producto.cantidad}
+            </p>
+            <div class="rating mb-3">
+                ${[5,4,3,2,1].map(i => `
+                    <input value="${i}" name="rate${producto.id}" id="star${producto.id}${i}" type="radio" ${rating >= i ? 'checked' : ''}>
+                `).join('')}
+            </div>
+          </div>
+          <button class="btn btn-danger add-to-cart-btn mt-auto w-100" ${producto.cantidad == 0 ? 'disabled' : ''}>
+              <i class="fas fa-shopping-cart"></i> Añadir al carrito
+          </button>
+      </div>
+  </div>
+`;
+
+      searchResultsRow.appendChild(cardWrapper);
+                });
             } else {
+                searchResultsRow.innerHTML = '<p class="text-center">No se encontraron productos.</p>';
+            }
+        } else {
+            body.classList.remove('search-active');
+            searchResultsContainer.style.display = 'none';
+        }
+    });
+
+
+    // Cierra el contenedor si hace clic fuera del buscador
+    document.addEventListener('click', function (e) {
+        if (!document.getElementById('search-group').contains(e.target)) {
+            if (searchInput.value === '') {
                 body.classList.remove('search-active');
                 searchResultsContainer.style.display = 'none';
             }
-        });
+        }
+
         
-        document.addEventListener('click', function(e) {
-            if (!document.getElementById('search-group').contains(e.target)) {
-                if (searchInput.value === '') {
-                    body.classList.remove('search-active');
-                    searchResultsContainer.style.display = 'none';
-                }
-            }
-        });
     });
+});
+
+
 </script>
 
 </body>
