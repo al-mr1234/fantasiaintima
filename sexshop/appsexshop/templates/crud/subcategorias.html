@@ -215,7 +215,7 @@
             <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEditarSubcategoria{{ subcategoria.IdSubCategoria }}">
                 Editar
             </button>
-            <a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarsubcategoria' subcategoria.IdSubCategoria %}">
+            <a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarsubcategoria' subcategoria.IdSubCategoria %}?page={{ page_obj.number }}">
                 <i class="far fa-trash-alt me-2"></i>Eliminar
             </a>
         </td>
@@ -231,7 +231,7 @@
                 </div>
                 <div class="modal-body">
                     <!-- Formulario para editar subcategoría -->
-                    <form method="POST" action="{% url 'actualizarsubcategoria' subcategoria.IdSubCategoria %}">
+                    <form method="POST" action="{% url 'actualizarsubcategoria' subcategoria.IdSubCategoria %}?page={{ page_obj.number }}">
                         {% csrf_token %}
                         <div class="mb-3">
                             <label for="inputState" class="form-label">Elige La Categoría</label>

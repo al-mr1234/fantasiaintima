@@ -144,6 +144,7 @@ def insertarsubcategoria(request):
     return redirect('listadosubcategorias')  # <--- aquí
 
 def actualizarsubcategoria(request, id_subcategoria):
+    page = request.GET.get('page', 1)
     subcat = get_object_or_404(subcategoria, IdSubCategoria=id_subcategoria)
     if request.method == "POST":
         nombre = request.POST.get('nombre', '').strip()
@@ -151,31 +152,32 @@ def actualizarsubcategoria(request, id_subcategoria):
         error = validar_nombre_subcategoria(nombre)
         if error:
             messages.error(request, error)
-            return redirect('crudSubCategorias')
+            return redirect(f'{reverse("crudSubCategorias")}?page={page}')
         # Sin cambios
         if nombre == subcat.NombresubCategoria and int(categoria_id) == subcat.categoria_id:
             messages.info(request, "Sin cambios realizados")
-            return redirect('crudSubCategorias')
+            return redirect(f'{reverse("listadosubcategorias")}?page={page}')
         # Duplicado
         if subcategoria.objects.filter(NombresubCategoria__iexact=nombre, categoria_id=categoria_id).exclude(IdSubCategoria=id_subcategoria).exists():
             messages.error(request, "Subcategoría ya existe")
-            return redirect('crudSubCategorias')
+            return redirect(f'{reverse("crudSubCategorias")}?page={page}')
         subcat.NombresubCategoria = nombre
         subcat.categoria_id = categoria_id
         subcat.save()
         messages.success(request, "Subcategoría actualizada exitosamente")
-        return redirect('crudSubCategorias')
+        return redirect(f'{reverse("listadosubcategorias")}?page={page}')
     return redirect('crudSubCategorias')
 
 def borrarsubcategoria(request, id_subcategoria):
+    page = request.GET.get('page', 1)
     subcat = get_object_or_404(subcategoria, IdSubCategoria=id_subcategoria)
     # Bloquear si tiene productos relacionados
     if producto.objects.filter(IdSubCategoria=subcat).exists():
         messages.error(request, "Subcategoría en uso")
-        return redirect('crudSubCategorias')
+        return redirect(f'{reverse("listadosubcategorias")}?page={page}')
     subcat.delete()
     messages.success(request, "Subcategoría eliminada")
-    return redirect('listadosubcategorias')
+    return redirect(f'{reverse("listadosubcategorias")}?page={page}')
 #endregion
 
 
