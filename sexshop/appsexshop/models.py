@@ -29,7 +29,7 @@ class usuario(models.Model):
     SegundoApellido = models.CharField(max_length=255)
     Correo = models.EmailField(max_length=255, unique=True)
     NombreUsuario  = models.CharField(max_length=45)
-    Contraseña   = models.CharField(max_length=128)
+    Contrasena   = models.CharField(max_length=128)
     idRol = models.ForeignKey('roles', on_delete=models.CASCADE, db_column='IdRol')
     imagen_perfil = models.ImageField(upload_to='profile_images/', null=True, blank=True)
     class Meta:
@@ -52,7 +52,7 @@ class domiciliario(models.Model):
     Celular = models.BigIntegerField()
     Ciudad = models.CharField(max_length=45, blank=True, null=True)
     Correo = models.EmailField(max_length=255, unique=True)
-    Contraseña = models.CharField(max_length=256, blank=False, null=False)
+    Contrasena = models.CharField(max_length=256, blank=False, null=False)
     IdRol = models.ForeignKey('Roles', on_delete=models.CASCADE, db_column='IdRol', null=True, blank=True)
 
     class Meta:
