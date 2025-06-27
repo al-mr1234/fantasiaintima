@@ -226,7 +226,7 @@
         <button  type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEditarUsuario{{ usuario.IdUsuario }}">
            Editar
         </button>
-        <a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarusuario' usuario.IdUsuario %}">
+        <a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarusuario' usuario.IdUsuario %}?page={{ page_obj.number }}">
           <i class="far fa-trash-alt me-2"></i>Eliminar
         </a>
       </td>
@@ -241,7 +241,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <form method="POST" action="{% url 'actualizarusuario' usuario.IdUsuario %}">
+            <form method="POST" action="{% url 'actualizarusuario' usuario.IdUsuario %}?page={{ page_obj.number }}">
               {% csrf_token %}
               <div class="mb-3">
                 <label for="primerNombre" class="form-label">Primer Nombre</label>

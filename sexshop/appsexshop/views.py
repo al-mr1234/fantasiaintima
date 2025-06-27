@@ -476,6 +476,7 @@ def insertarusuario(request):
 
 
 def editarusuario(request, id_usuario):
+    page = request.GET.get('page', 1)
     usuario_obj = usuario.objects.get(IdUsuario=id_usuario)
     if request.method == "POST":
         usuario_obj.PrimerNombre = request.POST.get('PrimerNombre')
@@ -487,14 +488,15 @@ def editarusuario(request, id_usuario):
         if request.POST.get('Contraseña'):
             usuario_obj.Contraseña = make_password(request.POST.get('Contraseña'))
         usuario_obj.save()
-        return redirect('crudUsuarios')
+        return redirect(f'{reverse("crudUsuarios")}?page={page}')
     return render(request, 'crud/editar_usuario.html', {'usuario': usuario_obj})
 
 
 def borrarusuario(request, id_usuario):
+    page = request.GET.get('page', 1)
     usuario_obj = usuario.objects.get(IdUsuario=id_usuario)
     usuario_obj.delete()
-    return redirect('crudUsuarios')
+    return redirect(f'{reverse("crudUsuarios")}?page={page}')
       
 #endregion
 
