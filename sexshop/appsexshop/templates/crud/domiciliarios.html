@@ -242,7 +242,7 @@
         <button  type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEditarDomiciliario{{ domiciliario.IdDomiciliario }}">
           Editar
         </button>
-        <a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrardomiciliario' domiciliario.IdDomiciliario %}">
+        <a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrardomiciliario' domiciliario.IdDomiciliario %}?page={{ page_obj.number }}">
           Eliminar
         </a>
       </td>
@@ -256,7 +256,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <form method="POST" action="{% url 'editardomiciliario' domiciliario.IdDomiciliario %}">
+            <form method="POST" action="{% url 'editardomiciliario' domiciliario.IdDomiciliario %}?page={{ page_obj.number }}">
               {% csrf_token %}
               <div class="mb-3">
                 <label for="tipoDocumento" class="form-label">Tipo de Documento</label>

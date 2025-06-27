@@ -529,6 +529,7 @@ def insertardomiciliario(request):
     return render(request, 'crud/insertar_domiciliario.html')
 
 def editardomiciliario(request, id_domiciliario):
+    page = request.GET.get('page', 1)
     domiciliario_obj = get_object_or_404(domiciliario, IdDomiciliario=id_domiciliario)
     
     if request.method == "POST":
@@ -543,14 +544,15 @@ def editardomiciliario(request, id_domiciliario):
         if request.POST.get('Contraseña'):
             domiciliario_obj.Contraseña = make_password(request.POST.get('Contraseña'))
         domiciliario_obj.save()
-        return redirect('crudDomiciliarios')
+        return redirect(f'{reverse("crudDomiciliarios")}?page={page}')
     
     return render(request, 'crud/editar_domiciliario.html', {'domiciliario': domiciliario_obj})
 
 def borrardomiciliario(request, id_domiciliario):
+    page = request.GET.get('page', 1)
     domiciliario_obj = domiciliario.objects.get(IdDomiciliario=id_domiciliario)
     domiciliario_obj.delete()
-    return redirect('crudDomiciliarios')
+    return redirect(f'{reverse("crudDomiciliarios")}?page={page}')
 #endregion
 
 
