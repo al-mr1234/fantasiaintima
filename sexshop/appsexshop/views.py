@@ -15,6 +15,7 @@ import re
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.urls import reverse
 
 
 def LadingPage(request):
@@ -596,6 +597,7 @@ def insertarproducto(request):
     return render(request, 'crud/productos.html')
 
 def editarproducto(request, id_producto):
+    page = request.GET.get('page', 1)
     producto_obj = get_object_or_404(producto, IdProducto=id_producto)
     if request.method == "POST":
         nombre = request.POST.get('Nombre', '').strip()
@@ -610,17 +612,17 @@ def editarproducto(request, id_producto):
         error = validar_nombre_producto(nombre)
         if error:
             messages.error(request, error)
-            return redirect('crudProductos')
+            return redirect(f'{reverse("crudProductos")}?page={page}')
         if not id_subcategoria:
             messages.error(request, "La subcategoría es obligatoria.")
-            return redirect('crudProductos')
+            return redirect(f'{reverse("crudProductos")}?page={page}')
         # Duplicado: mismo nombre y subcategoría, excluyendo el actual
         if producto.objects.filter(
             Nombre__iexact=nombre,
             IdSubCategoria_id=id_subcategoria
         ).exclude(IdProducto=id_producto).exists():
             messages.error(request, "Ya existe un producto con ese nombre en la misma subcategoría.")
-            return redirect('crudProductos')
+            return redirect(f'{reverse("crudProductos")}?page={page}')
 
         # Actualizar producto
         producto_obj.Nombre = nombre
@@ -633,13 +635,14 @@ def editarproducto(request, id_producto):
             producto_obj.Img = img
         producto_obj.save()
         messages.success(request, "Producto modificado exitosamente")
-        return redirect('crudProductos')
+        return redirect(f'{reverse("crudProductos")}?page={page}')
     return render(request, 'crud/editar_producto.html', {'producto': producto_obj})
+
 def borrarproducto(request, id_producto):
+    page = request.GET.get('page', 1)
     producto_obj = get_object_or_404(producto, IdProducto=id_producto)
     producto_obj.delete()
-    return redirect('crudProductos') # importa producto con minúscula si así está definido
-#endregion
+    return redirect(f'{reverse("crudProductos")}?page={page}') 
 
 @csrf_exempt
 def guardar_calificacion(request):

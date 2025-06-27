@@ -250,7 +250,7 @@
                                                   <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEditarProducto{{ producto.IdProducto }}">
                                                       Editar
                                                   </button>
-                                                  <a class="btn btn-link text-danger" href="{% url 'borrarproducto' producto.IdProducto %}">
+                                                  <a class="btn btn-link text-danger" href="{% url 'borrarproducto' producto.IdProducto %}?page={{ page_obj.number }}">
                                                       <i class="far fa-trash-alt me-2"></i>Eliminar
                                                   </a>
                                               </td>
@@ -265,7 +265,7 @@
                                                           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                       </div>
                                                       <div class="modal-body">
-                                                          <form method="POST" action="{% url 'editarproducto' producto.IdProducto %}" enctype="multipart/form-data">
+                                                          <form method="POST" action="{% url 'editarproducto' producto.IdProducto %}?page={{ page_obj.number }}" enctype="multipart/form-data">
                                                               {% csrf_token %}
                                                               <div class="mb-3">
                                                                   <label for="inputState" class="form-label">Elige La Sub-Categoría</label>
@@ -325,8 +325,9 @@
                                   </table>
 
                           <!-- Controles de paginación -->
-      <nav aria-label="Page navigation">
+      <div aria-label="Page navigation">
         <ul class="pagination justify-content-center">
+          <!--Si sí hay una página anterior, se muestra un botón « que te lleva a esa página.-->
           {% if page_obj.has_previous %}
             <li class="page-item">
               <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Anterior">
@@ -357,7 +358,7 @@
             </li>
           {% endif %}
         </ul>
-      </nav>
+      </div>
 
       <style>
       /* Cambia el color del botón de paginación activo y los círculos a rojo */
