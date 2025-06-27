@@ -217,7 +217,7 @@
                                 <h1 class="modal-title fs-5" id="modalEditarLabel{{ p.0 }}">Editar Categoría</h1>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                             </div>
-                            <form method="POST" action="{% url 'actualizarcategoria' p.0 %}">
+                            <form method="POST" action="{% url 'actualizarcategoria' p.0 %}?page={{ page_obj.number }}">
                                 {% csrf_token %}
                                 <div class="modal-body">
                                     <div class="mb-3">
@@ -234,7 +234,7 @@
                     </div>
                 </div>
             </td>
-            <td><a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarcategoria' p.0 %}"><i class="far fa-trash-alt me-2"></i>Eliminar</a></td>
+            <td><a class="btn btn-link text-danger text-gradient px-3 mb-0" href="{% url 'borrarcategoria' p.0 %}?page={{ page_obj.number }}"><i class="far fa-trash-alt me-2"></i>Eliminar</a></td>
         </tr>
         {% endfor %}
     </tbody>

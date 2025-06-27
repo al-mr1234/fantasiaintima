@@ -82,20 +82,22 @@ def listadocategorias(request):
     return render(request, "crud/categorias.html", {"page_obj": page_obj})
 
 def borrarcategoria(request, id_categoria):
+    page = request.GET.get('page', 1)
     try:
         borrar = connection.cursor()
         borrar.execute("CALL borrarcategoria(%s)", [id_categoria])
         messages.success(request, "Categoría eliminada correctamente.")
     except IntegrityError:
         messages.error(request, "No se puede eliminar la categoría porque tiene subcategorías asociadas.")
-    return redirect('listadocategorias')
+    return redirect(f'{reverse("listadocategorias")}?page={page}')    
 
 def actualizarcategoria(request, id_categoria):
+    page = request.GET.get('page', 1)
     if request.method == "POST":
         if request.POST.get('NombreCategoria'):
             actualizar = connection.cursor()
             actualizar.execute("CALL actualizarcategoria(%s, %s)", [id_categoria, request.POST.get('NombreCategoria')])
-            return redirect("listadocategorias")
+            return redirect(f'{reverse("listadocategorias")}?page={page}')
     else:
         categoria = connection.cursor()
         categoria.execute("CALL consultarcategoria(%s)", [id_categoria])
