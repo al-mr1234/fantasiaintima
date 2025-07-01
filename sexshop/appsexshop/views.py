@@ -240,6 +240,7 @@ def registro(request):
 
 
 def login(request):
+    # --- Bloqueo tras múltiples intentos fallidos ---
     max_intentos = 5
     intentos = request.session.get('login_intentos', 0)
     bloqueado = request.session.get('login_bloqueado', False)
@@ -249,52 +250,45 @@ def login(request):
 
     if request.method == "POST":
         correo = request.POST.get('correo', '').strip()
-        contrasena = request.POST.get('contrasena', '').strip()
+        contraseña = request.POST.get('contraseña', '').strip()
 
-        if not correo and not contrasena:
+        # --- Validación de campos vacíos ---
+        if not correo and not contraseña:
             return render(request, 'login/login.html', {'error': 'Campos obligatorios'})
         if not correo:
             return render(request, 'login/login.html', {'error': 'Este campo es obligatorio'})
-        if not contrasena:
+        if not contraseña:
             return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
 
-        # Validación de formato de correo
+        # --- Validación de formato de correo ---
         try:
             validate_email(correo)
         except ValidationError:
             return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
 
-        # Buscar usuario normal
-        user = usuario.objects.filter(Correo=correo).first()
-        if user and (user.Contrasena == contrasena or check_password(contrasena, user.Contrasena)):
-            # Login usuario normal
-            request.session['user_id'] = user.IdUsuario
-            request.session['username'] = user.NombreUsuario
-            request.session['nombre'] = f"{user.PrimerNombre} {user.PrimerApellido}"
-            request.session['role'] = user.idRol.IdRol
-            request.session['login_intentos'] = 0
-            request.session['login_bloqueado'] = False
-            return redirect('Ladingpage')
+        # --- Usuario no registrado ---
+        try:
+            user = usuario.objects.get(Correo=correo)
+        except usuario.DoesNotExist:
+            return render(request, 'login/login.html', {'error': 'Usuario no encontrado'})
 
-        # Buscar domiciliario
-        domi = domiciliario.objects.filter(Correo=correo).first()
-        if domi and (domi.Contrasena == contrasena or check_password(contrasena, domi.Contrasena)):
-            # Login domiciliario
-            request.session['domi_id'] = domi.IdDomiciliario
-            request.session['username'] = domi.NombreDomiciliario  
-            request.session['nombre'] = f"{domi.NombreDomiciliario} {domi.PrimerApellido}"
-            request.session['role'] = domi.IdRol.IdRol if domi.IdRol else 2  # Por defecto 2
-            request.session['login_intentos'] = 0
-            request.session['login_bloqueado'] = False
-            return redirect('Ladingpage')
+        # --- Contraseña incorrecta ---
+        if not (user.Contraseña == contraseña or check_password(contraseña, user.Contraseña)):
+            intentos += 1
+            request.session['login_intentos'] = intentos
+            if intentos >= max_intentos:
+                request.session['login_bloqueado'] = True
+                return render(request, 'login/login.html', {'error': 'Cuenta bloqueada temporalmente'})
+            return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
 
-        # Si no encontró usuario ni domiciliario válido
-        intentos += 1
-        request.session['login_intentos'] = intentos
-        if intentos >= max_intentos:
-            request.session['login_bloqueado'] = True
-            return render(request, 'login/login.html', {'error': 'Cuenta bloqueada temporalmente'})
-        return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
+        # --- Login exitoso ---
+        request.session['user_id'] = user.IdUsuario
+        request.session['username'] = user.NombreUsuario
+        request.session['nombre'] = f"{user.PrimerNombre} {user.PrimerApellido}"
+        request.session['role'] = user.idRol.IdRol
+        request.session['login_intentos'] = 0
+        request.session['login_bloqueado'] = False
+        return redirect('Ladingpage')
 
     return render(request, 'login/login.html')
 
@@ -463,7 +457,7 @@ def insertarusuario(request):
         if (request.POST.get('PrimerNombre') and request.POST.get('OtrosNombres') and
             request.POST.get('PrimerApellido') and request.POST.get('SegundoApellido') and
             request.POST.get('Correo') and request.POST.get('NombreUsuario') and
-            request.POST.get('Contrasena')):
+            request.POST.get('Contraseña')):
 
             rol_default = roles.objects.get(IdRol=3)  
             nuevo_usuario = usuario(
@@ -473,7 +467,7 @@ def insertarusuario(request):
                 SegundoApellido=request.POST.get('SegundoApellido'),
                 Correo=request.POST.get('Correo'),
                 NombreUsuario=request.POST.get('NombreUsuario'),
-                Contrasena=make_password(request.POST.get('Contrasena')),
+                Contraseña=make_password(request.POST.get('Contraseña')),
                 idRol=rol_default
             )
             nuevo_usuario.save()
@@ -491,8 +485,8 @@ def editarusuario(request, id_usuario):
         usuario_obj.SegundoApellido = request.POST.get('SegundoApellido')
         usuario_obj.Correo = request.POST.get('Correo')
         usuario_obj.NombreUsuario = request.POST.get('NombreUsuario')
-        if request.POST.get('Contrasena'):
-            usuario_obj.Contraseña = make_password(request.POST.get('Contrasena'))
+        if request.POST.get('Contraseña'):
+            usuario_obj.Contraseña = make_password(request.POST.get('Contraseña'))
         usuario_obj.save()
         return redirect(f'{reverse("crudUsuarios")}?page={page}')
     return render(request, 'crud/editar_usuario.html', {'usuario': usuario_obj})
@@ -524,7 +518,7 @@ def insertardomiciliario(request):
                 Celular=request.POST.get('Celular'),
                 Ciudad=request.POST.get('Ciudad'),  # Captura la ciudad
                 Correo=request.POST.get('Correo'),
-                Contrasena=make_password(request.POST.get('Contrasena')),
+                Contraseña=make_password(request.POST.get('Contraseña')),
                 IdRol=rol_domiciliario  # Asignar el rol de domiciliario
             )
 
@@ -549,8 +543,8 @@ def editardomiciliario(request, id_domiciliario):
         domiciliario_obj.Celular = request.POST.get('Celular')
         domiciliario_obj.Ciudad = request.POST.get('Ciudad')
         domiciliario_obj.Correo = request.POST.get('Correo')
-        if request.POST.get('Contrasena'):
-            domiciliario_obj.Contraseña = make_password(request.POST.get('Contrasena'))
+        if request.POST.get('Contraseña'):
+            domiciliario_obj.Contraseña = make_password(request.POST.get('Contraseña'))
         domiciliario_obj.save()
         return redirect(f'{reverse("crudDomiciliarios")}?page={page}')
     
@@ -698,55 +692,44 @@ def guardar_calificacion(request):
 
 # region perfiles
 def perfiles(request):
-    user_id = request.session.get('user_id')
-    domi_id = request.session.get('domi_id')
-
-    if not user_id and not domi_id:
+    if not request.session.get('user_id'):
         return redirect('login')
-
+    
     try:
-        if user_id:
-            user = usuario.objects.get(IdUsuario=user_id)
-            tipo = 'usuario'
-        else:
-            user = domiciliario.objects.get(IdDomiciliario=domi_id)
-            tipo = 'domiciliario'
-
+        user = usuario.objects.get(IdUsuario=request.session['user_id'])
+        
         if request.method == 'POST':
+            # Verificar si es una actualización de datos o solo de imagen
             if 'profile-pic' in request.FILES:
+                # Solo actualizar imagen
                 user.imagen_perfil = request.FILES['profile-pic']
                 user.save()
                 return JsonResponse({
                     'status': 'success',
                     'new_image_url': user.imagen_perfil.url if user.imagen_perfil else '/static/img/perfil.png'
-                    
                 })
             else:
-                # Datos comunes (ajusta nombres de campos si son diferentes en domiciliario)
-                user.NombreDomiciliario = request.POST.get('primerNombre', getattr(user, 'NombreDomiciliario', ''))
+                # Actualizar datos del perfil
+                user.PrimerNombre = request.POST.get('primerNombre', user.PrimerNombre)
+                user.OtrosNombres = request.POST.get('segundoNombre', user.OtrosNombres)
                 user.PrimerApellido = request.POST.get('primerApellido', user.PrimerApellido)
                 user.SegundoApellido = request.POST.get('segundoApellido', user.SegundoApellido)
-                if hasattr(user, 'NombreUsuario'):
-                    user.NombreUsuario = request.POST.get('nombreUsuario', user.NombreUsuario)
-
+                user.NombreUsuario = request.POST.get('nombreUsuario', user.NombreUsuario)
+                
                 if request.POST.get('contrasena'):
-                    user.Contrasena = make_password(request.POST.get('contrasena'))
-
+                    user.Contraseña = make_password(request.POST.get('contrasena'))
+                
                 user.save()
-
-                request.session['nombre'] = f"{user.NombreDomiciliario} {user.PrimerApellido}" if tipo == 'domiciliario' else f"{user.PrimerNombre} {user.PrimerApellido}"
-
+                request.session['nombre'] = f"{user.PrimerNombre} {user.PrimerApellido}"
                 return redirect('perfiles')
-
+        
         return render(request, 'perfiles.html', {
-            'usuario': user,
-            'tipo': tipo,
-            'imagen_perfil': user.imagen_perfil.url if user.imagen_perfil else '/static/img/perfil.png'
-        })
-
-    except (usuario.DoesNotExist, domiciliario.DoesNotExist):
+        'usuario': user,
+        'imagen_perfil': user.imagen_perfil.url if user.imagen_perfil else '/static/img/perfil.png'
+    })
+        
+    except usuario.DoesNotExist:
         return redirect('login')
-
 
 def eliminar_foto_perfil(request):
     if request.method == 'POST' and request.session.get('user_id'):
