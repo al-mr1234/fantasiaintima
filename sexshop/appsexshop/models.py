@@ -53,6 +53,7 @@ class domiciliario(models.Model):
     Ciudad = models.CharField(max_length=45, blank=True, null=True)
     Correo = models.EmailField(max_length=255, unique=True)
     Contrasena = models.CharField(max_length=256, blank=False, null=False)
+    imagen_perfil = models.ImageField(upload_to='profile_images/', null=True, blank=True)
     IdRol = models.ForeignKey('Roles', on_delete=models.CASCADE, db_column='IdRol', null=True, blank=True)
 
     class Meta:
