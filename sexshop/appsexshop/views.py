@@ -184,12 +184,12 @@ def borrarsubcategoria(request, id_subcategoria):
 # region login
 def validar_registro_usuario(data):
     # Todos los campos obligatorios
-    campos = ['PrimerNombre', 'OtrosNombres', 'PrimerApellido', 'SegundoApellido', 'Correo', 'NombreUsuario', 'Contraseña']
+    campos = ['PrimerNombre', 'OtrosNombres', 'PrimerApellido', 'SegundoApellido', 'Correo', 'NombreUsuario', 'Contrasena']
     for campo in campos:
         if not data.get(campo) or not data.get(campo).strip():
             if campo == 'NombreUsuario':
                 return "Nombre de usuario es obligatorio"
-            if campo == 'Contraseña':
+            if campo == 'Contrasena':
                 return "Contraseña es obligatoria"
             return "Todos los campos son obligatorios"
 
@@ -201,10 +201,10 @@ def validar_registro_usuario(data):
         return "Nombre excede el límite de caracteres"
 
     # Contraseña débil y con espacios
-    contraseña = data.get('Contraseña')
-    if len(contraseña) < 8:
+    contrasena = data.get('Contrasena')
+    if len(contrasena) < 8:
         return "La contraseña debe tener al menos 8 caracteres"
-    if ' ' in contraseña:
+    if ' ' in contrasena:
         return "La contraseña no debe contener espacios"
 
     return None
@@ -230,7 +230,7 @@ def registro(request):
             SegundoApellido=request.POST.get('SegundoApellido').strip(),
             Correo=request.POST.get('Correo').strip(),
             NombreUsuario=nombre_usuario,
-            Contraseña=make_password(request.POST.get('Contraseña')),
+            Contrasena=make_password(request.POST.get('Contrasena')),
             idRol=rol_default
         )
         nuevo_usuario.save()
@@ -250,14 +250,14 @@ def login(request):
 
     if request.method == "POST":
         correo = request.POST.get('correo', '').strip()
-        contraseña = request.POST.get('contraseña', '').strip()
+        contrasena = request.POST.get('contrasena', '').strip()
 
         # --- Validación de campos vacíos ---
-        if not correo and not contraseña:
+        if not correo and not contrasena:
             return render(request, 'login/login.html', {'error': 'Campos obligatorios'})
         if not correo:
             return render(request, 'login/login.html', {'error': 'Este campo es obligatorio'})
-        if not contraseña:
+        if not contrasena:
             return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
 
         # --- Validación de formato de correo ---
@@ -273,7 +273,7 @@ def login(request):
             return render(request, 'login/login.html', {'error': 'Usuario no encontrado'})
 
         # --- Contraseña incorrecta ---
-        if not (user.Contraseña == contraseña or check_password(contraseña, user.Contraseña)):
+        if not (user.Contrasena == contrasena or check_password(contrasena, user.Contrasena)):
             intentos += 1
             request.session['login_intentos'] = intentos
             if intentos >= max_intentos:
@@ -297,7 +297,6 @@ def login(request):
 def logout(request):
     request.session.flush()
     return redirect('Ladingpage')  
-
 
 def solicitar_recuperacion(request):
     if request.method == 'POST':
@@ -437,7 +436,7 @@ def nueva_contrasena(request):
         
         try:
             user = usuario.objects.get(Correo=email)
-            user.Contraseña = make_password(password)  # Importante: hashear la nueva contraseña
+            user.Contrasena = make_password(password)  # Importante: hashear la nueva contraseña
             user.save()
             
             # Limpiar la sesión
@@ -457,7 +456,7 @@ def insertarusuario(request):
         if (request.POST.get('PrimerNombre') and request.POST.get('OtrosNombres') and
             request.POST.get('PrimerApellido') and request.POST.get('SegundoApellido') and
             request.POST.get('Correo') and request.POST.get('NombreUsuario') and
-            request.POST.get('Contraseña')):
+            request.POST.get('Contrasena')):
 
             rol_default = roles.objects.get(IdRol=3)  
             nuevo_usuario = usuario(
@@ -467,7 +466,7 @@ def insertarusuario(request):
                 SegundoApellido=request.POST.get('SegundoApellido'),
                 Correo=request.POST.get('Correo'),
                 NombreUsuario=request.POST.get('NombreUsuario'),
-                Contraseña=make_password(request.POST.get('Contraseña')),
+                Contrasena=make_password(request.POST.get('Contrasena')),
                 idRol=rol_default
             )
             nuevo_usuario.save()
@@ -485,8 +484,8 @@ def editarusuario(request, id_usuario):
         usuario_obj.SegundoApellido = request.POST.get('SegundoApellido')
         usuario_obj.Correo = request.POST.get('Correo')
         usuario_obj.NombreUsuario = request.POST.get('NombreUsuario')
-        if request.POST.get('Contraseña'):
-            usuario_obj.Contraseña = make_password(request.POST.get('Contraseña'))
+        if request.POST.get('Contrasena'):
+            usuario_obj.Contrasena = make_password(request.POST.get('Contrasena'))
         usuario_obj.save()
         return redirect(f'{reverse("crudUsuarios")}?page={page}')
     return render(request, 'crud/editar_usuario.html', {'usuario': usuario_obj})
@@ -518,7 +517,7 @@ def insertardomiciliario(request):
                 Celular=request.POST.get('Celular'),
                 Ciudad=request.POST.get('Ciudad'),  # Captura la ciudad
                 Correo=request.POST.get('Correo'),
-                Contraseña=make_password(request.POST.get('Contraseña')),
+                Contrasena=make_password(request.POST.get('Contrasena')),
                 IdRol=rol_domiciliario  # Asignar el rol de domiciliario
             )
 
@@ -543,8 +542,8 @@ def editardomiciliario(request, id_domiciliario):
         domiciliario_obj.Celular = request.POST.get('Celular')
         domiciliario_obj.Ciudad = request.POST.get('Ciudad')
         domiciliario_obj.Correo = request.POST.get('Correo')
-        if request.POST.get('Contraseña'):
-            domiciliario_obj.Contraseña = make_password(request.POST.get('Contraseña'))
+        if request.POST.get('Contrasena'):
+            domiciliario_obj.Contrasena = make_password(request.POST.get('Contrasena'))
         domiciliario_obj.save()
         return redirect(f'{reverse("crudDomiciliarios")}?page={page}')
     
