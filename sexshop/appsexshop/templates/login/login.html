@@ -12,9 +12,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
 
-      .messages{
-        color:green;
-        margin-top: -5px;
+      .messages {
+        margin-bottom: 15px;
+        margin-top: 10px;
+      }
+
+      .message {
+        background-color: rgba(0, 128, 0, 0.1); /* Verde suave */
+        border: 1px solid green;
+        padding: 10px;
+        border-radius: 8px;
+        color: green;
+        font-weight: bold;
+        text-align: center;
       }
       .error {
         border: 2px solid rgb(255, 0, 0);
@@ -47,10 +57,10 @@
     <!-- Formulario de login -->
     <form class="form" method="post">
       {% csrf_token %}
-      <input type="email" name="correo" class="input" placeholder="Correo Electrónico" required minlength="3">
+      <input type="email" name="correo" class="input" placeholder="Correo Electrónico" >
       <span class="error-message" id="error-email"></span>
 
-      <input type="password" name="contrasena" class="input" placeholder="Contraseña" required minlength="8">
+      <input type="password" name="contrasena" class="input" placeholder="Contraseña" >
       <span class="error-message" id="error-password"></span>
 
       <p class="page-link">
@@ -83,6 +93,29 @@
 
   </div>
 
+{% if bloqueado and tiempo_restante %}
+<script>
+  let tiempo = {{ tiempo_restante }};
+  const mensaje = document.querySelector('.message') || document.querySelector('p[style*="color:red"]');
+
+  function actualizarMensaje() {
+    const minutos = Math.floor(tiempo / 60);
+    const segundos = tiempo % 60;
+    if (mensaje) {
+      mensaje.textContent = `Cuenta bloqueada. Intenta en ${minutos}:${segundos.toString().padStart(2, '0')} minutos.`;
+    }
+
+    tiempo--;
+    if (tiempo >= 0) {
+      setTimeout(actualizarMensaje, 1000);
+    } else {
+      if (mensaje) mensaje.textContent = '';  // Borra mensaje al finalizar
+    }
+  }
+
+  actualizarMensaje();
+</script>
+{% endif %}
 
   </body>
 </html>

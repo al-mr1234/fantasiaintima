@@ -16,6 +16,15 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.urls import reverse
+from datetime import datetime, timedelta
+from datetime import datetime, timedelta
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+from django.contrib.auth.hashers import check_password
+from datetime import datetime, timedelta
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+from django.contrib.auth.hashers import check_password
 
 
 def LadingPage(request):
@@ -240,13 +249,27 @@ def registro(request):
 
 
 def login(request):
-    # --- Bloqueo tras múltiples intentos fallidos ---
-    max_intentos = 5
+    max_intentos = 3
     intentos = request.session.get('login_intentos', 0)
     bloqueado = request.session.get('login_bloqueado', False)
+    bloqueado_hasta = request.session.get('bloqueado_hasta')
 
-    if bloqueado:
-        return render(request, 'login/login.html', {'error': 'Cuenta bloqueada temporalmente'})
+    # --- Validar si el bloqueo sigue vigente ---
+    if bloqueado and bloqueado_hasta:
+        desbloqueo = datetime.fromisoformat(bloqueado_hasta)
+        ahora = datetime.now()
+        if ahora < desbloqueo:
+            tiempo_restante = int((desbloqueo - ahora).total_seconds())
+            return render(request, 'login/login.html', {
+                'error': 'Cuenta bloqueada temporalmente. Intenta más tarde.',
+                'bloqueado': True,
+                'tiempo_restante': tiempo_restante
+            })
+        else:
+            # Se levanta el bloqueo al pasar el tiempo
+            request.session['login_bloqueado'] = False
+            request.session['bloqueado_hasta'] = None
+            request.session['login_intentos'] = 0
 
     if request.method == "POST":
         correo = request.POST.get('correo', '').strip()
@@ -256,15 +279,15 @@ def login(request):
         if not correo and not contrasena:
             return render(request, 'login/login.html', {'error': 'Campos obligatorios'})
         if not correo:
-            return render(request, 'login/login.html', {'error': 'Este campo es obligatorio'})
+            return render(request, 'login/login.html', {'error': 'El correo es obligatorio'})
         if not contrasena:
-            return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
+            return render(request, 'login/login.html', {'error': 'La contraseña es obligatoria'})
 
         # --- Validación de formato de correo ---
         try:
             validate_email(correo)
         except ValidationError:
-            return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
+            return render(request, 'login/login.html', {'error': 'Credenciales inválidas'})
 
         # --- Usuario no registrado ---
         try:
@@ -278,8 +301,13 @@ def login(request):
             request.session['login_intentos'] = intentos
             if intentos >= max_intentos:
                 request.session['login_bloqueado'] = True
-                return render(request, 'login/login.html', {'error': 'Cuenta bloqueada temporalmente'})
-            return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
+                request.session['bloqueado_hasta'] = (datetime.now() + timedelta(minutes=1)).isoformat()
+                return render(request, 'login/login.html', {
+                    'error': 'Cuenta bloqueada temporalmente por intentos fallidos',
+                    'bloqueado': True,
+                    'tiempo_restante': 60
+                })
+            return render(request, 'login/login.html', {'error': 'Credenciales inválidas'})
 
         # --- Login exitoso ---
         request.session['user_id'] = user.IdUsuario
@@ -288,10 +316,10 @@ def login(request):
         request.session['role'] = user.idRol.IdRol
         request.session['login_intentos'] = 0
         request.session['login_bloqueado'] = False
+        request.session['bloqueado_hasta'] = None
         return redirect('Ladingpage')
 
     return render(request, 'login/login.html')
-
 
 
 def logout(request):

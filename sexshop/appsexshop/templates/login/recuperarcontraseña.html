@@ -11,16 +11,22 @@
     <style>
      
       .error-message {
-        color: red;
+        color: yellow;
         font-size: 16px;
         margin-top: -35px;
         display: none; /* Oculto por defecto */
       }
-     
-      .messages .error{
-        color:red;
-        font-size: 18px;
+
+      .message {
+        background-color: rgba(255, 0, 0, 0.1); /* Rojo suave */
+        border: 1px solid red;
+        padding: 10px;
+        border-radius: 8px;
+        color: red;
+        font-weight: bold;
+        text-align: center;
       }
+
       
     </style>
   </head>
@@ -41,8 +47,11 @@
       </div>
       {% endif %}
       
+
+
       <form class="form" id="recoverForm" method="post">
         {% csrf_token %}
+        
         <input type="email" id="email" name="email" class="input" placeholder="Correo Electrónico">
         <span class="error-message" id="error-email"></span>
         <button type="submit" class="form-btn">Enviar código</button>
