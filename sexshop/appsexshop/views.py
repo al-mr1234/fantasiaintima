@@ -192,38 +192,56 @@ def borrarsubcategoria(request, id_subcategoria):
 
 # region login
 def validar_registro_usuario(data):
-    # Todos los campos obligatorios
-    campos = ['PrimerNombre', 'OtrosNombres', 'PrimerApellido', 'SegundoApellido', 'Correo', 'NombreUsuario', 'Contrasena']
-    for campo in campos:
-        if not data.get(campo) or not data.get(campo).strip():
-            if campo == 'NombreUsuario':
-                return "Nombre de usuario es obligatorio"
-            if campo == 'Contrasena':
-                return "Contraseña es obligatoria"
-            return "Todos los campos son obligatorios"
+    campos_obligatorios = [
+        'PrimerNombre',
+        'PrimerApellido',
+        'SegundoApellido',
+        'Correo',
+        'NombreUsuario',
+        'Contrasena',
+    ]
 
-    # Nombre de usuario largo/corto
-    nombre_usuario = data.get('NombreUsuario').strip()
-    if len(nombre_usuario) < 3:
-        return "El nombre de usuario debe tener al menos 3 caracteres"
-    if len(nombre_usuario) > 50:
-        return "Nombre excede el límite de caracteres"
+    # Verificar campos vacíos
+    for campo in campos_obligatorios:
+        valor = data.get(campo, '').strip()
+        if not valor:
+            return f"El campo '{campo}' es obligatorio y no puede estar vacío."
 
-    # Contraseña débil y con espacios
-    contrasena = data.get('Contrasena')
-    if len(contrasena) < 8:
-        return "La contraseña debe tener al menos 8 caracteres"
+    # Validar formato de correo (opcional)
+    correo = data.get('Correo', '').strip()
+    if '@' not in correo or '.' not in correo:
+        return "El correo ingresado no es válido."
+
+    # Verificar que el correo no exista ya (único)
+    if usuario.objects.filter(Correo=correo).exists():
+        return "Ya existe un usuario registrado con ese correo."
+    
+    # Validar contraseña
+    contrasena = data.get('Contrasena', '')
+    
+    if len(contrasena) > 8:
+        return "La contraseña debe tener como máximo 8 caracteres."
+
     if ' ' in contrasena:
-        return "La contraseña no debe contener espacios"
+        return "La contraseña no debe contener espacios."
 
-    return None
+    if not re.search(r'[^A-Za-z0-9]', contrasena):
+        return "La contraseña debe contener al menos un carácter especial."
+
+    return None  # Todo está bien
+
+
+   
 
 def registro(request):
     if request.method == "POST":
-        error = validar_registro_usuario(request.POST)
+        data = request.POST
+        error = validar_registro_usuario(data)
         if error:
             messages.error(request, error)
-            return render(request, 'login/registro.html')
+            return render(request, 'login/registro.html', {
+                'valores': data  # Esto permite mantener los campos ya ingresados
+            })
 
         # Usuario duplicado (case sensitive permitido)
         nombre_usuario = request.POST.get('NombreUsuario').strip()
