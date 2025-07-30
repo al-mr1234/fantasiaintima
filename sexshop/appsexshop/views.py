@@ -294,6 +294,8 @@ def login(request):
             user = usuario.objects.get(Correo=correo)
         except usuario.DoesNotExist:
             return render(request, 'login/login.html', {'error': 'Usuario no encontrado'})
+        
+
 
         # --- Contraseña incorrecta ---
         if not (user.Contrasena == contrasena or check_password(contrasena, user.Contrasena)):
@@ -486,7 +488,7 @@ def insertarusuario(request):
             request.POST.get('Correo') and request.POST.get('NombreUsuario') and
             request.POST.get('Contrasena')):
 
-            rol_default = roles.objects.get(IdRol=3)  
+            rol_default = roles.objects.get(IdRol=2)  
             nuevo_usuario = usuario(
                 PrimerNombre=request.POST.get('PrimerNombre'),
                 OtrosNombres=request.POST.get('OtrosNombres'),
@@ -533,7 +535,7 @@ def insertardomiciliario(request):
     if request.method == "POST":
         try:
             # Asignar automáticamente el rol de domiciliario
-            rol_domiciliario = roles.objects.get(IdRol=2)
+            rol_domiciliario = roles.objects.get(IdRol=3)
 
             # Crear el domiciliario con los datos del formulario
             nuevo_domiciliario = domiciliario(
@@ -545,7 +547,6 @@ def insertardomiciliario(request):
                 Celular=request.POST.get('Celular'),
                 Ciudad=request.POST.get('Ciudad'),  # Captura la ciudad
                 Correo=request.POST.get('Correo'),
-                Contrasena=make_password(request.POST.get('Contrasena')),
                 IdRol=rol_domiciliario  # Asignar el rol de domiciliario
             )
 
@@ -570,8 +571,7 @@ def editardomiciliario(request, id_domiciliario):
         domiciliario_obj.Celular = request.POST.get('Celular')
         domiciliario_obj.Ciudad = request.POST.get('Ciudad')
         domiciliario_obj.Correo = request.POST.get('Correo')
-        if request.POST.get('Contrasena'):
-            domiciliario_obj.Contrasena = make_password(request.POST.get('Contrasena'))
+    
         domiciliario_obj.save()
         return redirect(f'{reverse("crudDomiciliarios")}?page={page}')
     
@@ -806,7 +806,7 @@ def crudProductos(request):
     })
 
 def crudDomiciliarios(request):
-    domiciliarios_list = domiciliario.objects.filter(IdRol=2).order_by('-IdDomiciliario')
+    domiciliarios_list = domiciliario.objects.filter(IdRol=3).order_by('-IdDomiciliario')
     page_number = request.GET.get('page', 1)
     paginator = Paginator(domiciliarios_list, 5)
     page_obj = paginator.get_page(page_number)
@@ -814,7 +814,7 @@ def crudDomiciliarios(request):
 
 
 def crudUsuarios(request):
-    usuarios_list = usuario.objects.filter(idRol=3).order_by('-IdUsuario')
+    usuarios_list = usuario.objects.filter(idRol=2).order_by('-IdUsuario')
     page_number = request.GET.get('page', 1)
     paginator = Paginator(usuarios_list, 5)
     page_obj = paginator.get_page(page_number)
