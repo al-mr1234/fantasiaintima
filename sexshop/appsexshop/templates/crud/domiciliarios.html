@@ -153,6 +153,7 @@
           {% endfor %}
       </div>
       {% endif %}
+      <br>
         <!-- Button  modal -->
 <!-- Botón para abrir el modal -->
 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalRegistrarDomiciliario">
@@ -198,6 +199,7 @@
           <div class="mb-3">
             <label for="celular" class="form-label">Número de Celular</label>
             <input type="tel" class="form-control" id="celular" name="Celular" required>
+            <small id="celularHelp" style="color: #e6b800; display:none;">No debe contener letras.</small>
           </div>
           <div class="mb-3">
             <label for="ciudad" class="form-label">Ciudad</label>
@@ -206,6 +208,7 @@
           <div class="mb-3">
             <label for="correo" class="form-label">Correo</label>
             <input type="email" class="form-control" id="correo" name="Correo" required>
+            <small id="correoHelp" style="color: #e6b800; display:none;">Correo inválido o dominio no válido.</small>
           </div>
           
       </div>
@@ -383,6 +386,7 @@
             }
         }
     }
+
 </script>
 
 
@@ -513,6 +517,45 @@
       }
       Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
     }
+
+
+     //valdacion de correo y contraseña en tiempo real
+  const correoInput = document.getElementById('correo');
+  const correoHelp = document.getElementById('correoHelp');
+
+
+  // Función para validar correo con dominio real (básico)
+  function validarCorreo(correo) {
+    // Expresión regular para correo básico y dominio con al menos un punto y dominio válido
+    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return re.test(correo);
+  }
+
+
+  correoInput.addEventListener('input', () => {
+    if (correoInput.value === '' || validarCorreo(correoInput.value)) {
+      correoHelp.style.display = 'none';
+    } else {
+      correoHelp.style.display = 'block';
+    }
+  });
+
+  const celularInput = document.getElementById('celular');
+  const celularHelp = document.getElementById('celularHelp');
+
+  celularInput.addEventListener('input', () => {
+    // Solo números (0-9)
+    const valor = celularInput.value;
+    const tieneLetras = /[^0-9]/.test(valor); // True si hay caracteres que no sean números
+
+    if (tieneLetras) {
+      celularHelp.style.display = 'block';
+    } else {
+      celularHelp.style.display = 'none';
+    }
+  });
+
+
   </script>
   <!-- Github buttons -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>
