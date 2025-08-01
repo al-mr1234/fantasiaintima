@@ -186,6 +186,7 @@
           <div class="mb-3">
             <label for="correo" class="form-label">Correo</label>
             <input type="email" class="form-control" id="correo" name="Correo" placeholder="Ingresa el correo electrónico" required>
+             <small id="correoHelp" style="color: #e6b800; display:none;">Correo inválido o dominio no válido.</small>
           </div>
           <div class="mb-3">
             <label for="nombreUsuario" class="form-label">Nombre de Usuario</label>
@@ -194,6 +195,9 @@
           <div class="mb-3">
             <label for="contrasena" class="form-label">Contraseña</label>
             <input type="password" class="form-control" id="contrasena" name="Contrasena" placeholder="Ingresa la contraseña" required>
+             <small id="contrasenaHelp" style="color: #e6b800; display:none;">
+    La contraseña debe tener al menos 8 caracteres, <br> no contener espacios <br> tener al menos un carácter especial.
+  </small>
           </div>
       </div>
       <div class="modal-footer">
@@ -279,7 +283,7 @@
               </div>
               <div class="mb-3">
                 <label for="contrasena" class="form-label">Contraseña</label>
-                <input type="password" class="form-control" id="contrasena" name="Contrasena">
+                <input type="password" class="form-control" id="contrasena" name="Contrasena" value="{{ usuario.Contrasena}}">
               </div>
           </div>
           <div class="modal-footer">
@@ -490,6 +494,55 @@
       }
       Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
     }
+
+     
+          //valdacion de correo y contraseña en tiempo real
+  const correoInput = document.getElementById('correo');
+  const correoHelp = document.getElementById('correoHelp');
+
+  const contrasenaInput = document.getElementById('contrasena');
+  const contrasenaHelp = document.getElementById('contrasenaHelp');
+
+  // Función para validar correo con dominio real (básico)
+  function validarCorreo(correo) {
+    // Expresión regular para correo básico y dominio con al menos un punto y dominio válido
+    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return re.test(correo);
+  }
+
+  // Función para validar contraseña
+  function validarContrasena(pass) {
+    const minLength = 8;
+    const tieneEspacio = /\s/;
+    const tieneCaracterEspecial = /[!@#$%^&*(),.?":{}|<>]/;
+
+    if (
+      pass.length < minLength ||
+      tieneEspacio.test(pass) ||
+      !tieneCaracterEspecial.test(pass)
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  correoInput.addEventListener('input', () => {
+    if (correoInput.value === '' || validarCorreo(correoInput.value)) {
+      correoHelp.style.display = 'none';
+    } else {
+      correoHelp.style.display = 'block';
+    }
+  });
+
+  contrasenaInput.addEventListener('input', () => {
+    if (contrasenaInput.value === '' || validarContrasena(contrasenaInput.value)) {
+      contrasenaHelp.style.display = 'none';
+    } else {
+      contrasenaHelp.style.display = 'block';
+    }
+  });
+
+
   </script>
   <!-- Github buttons -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>
