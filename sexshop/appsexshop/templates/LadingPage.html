@@ -351,7 +351,10 @@
     </div>
 </div>
 
-   
+   <!-- ALERTA DE PRODUCTO AGREGADO -->
+<div id="alerta-carrito" class="alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3 text-center d-none shadow rounded-3 px-4 py-2" style="z-index: 9999; font-size: 1rem;">
+  Producto agregado al carrito 💖
+</div>
 
 <!-- Search Results Container -->
 <div id="search-results-container" class="search-results-container">
@@ -436,6 +439,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
 <script src="{% static 'js/ladingPage/productosLading.js' %}"></script>
+
+
 <script>
   
 //spinner de carga
@@ -561,9 +566,125 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+// Función para agregar al carrito (igual que en catalogo.js)
+function agregarAlCarrito(idProducto, nombre, precio, cantidad, imagen, descripcion) {
+    const carritoKey = 'carrito';
+    const obtenerCarrito = () => JSON.parse(localStorage.getItem(carritoKey) || '[]');
+    const guardarCarrito = carrito => localStorage.setItem(carritoKey, JSON.stringify(carrito));
+    const actualizarIconoCarrito = () => {
+        const total = obtenerCarrito().reduce((acc, item) => acc + item.cantidad, 0);
+        const icono = document.getElementById('cartCount');
+        if (icono) icono.textContent = total;
+    };
+
+    const carrito = obtenerCarrito();
+    let prod = carrito.find(p => p.IdProducto == idProducto);
+    let stock = 1;
+    const card = document.querySelector(`.card[data-id="${idProducto}"]`);
+    if (card) {
+        stock = parseInt(card.getAttribute('data-cantidad')) || 1;
+    }
+    if (prod) {
+        if (prod.cantidad + cantidad > stock) {
+            prod.cantidad = stock;
+        } else {
+            prod.cantidad += cantidad;
+        }
+        prod.stock = stock;
+    } else {
+        carrito.push({ IdProducto: idProducto, nombre, precio, cantidad, imagen, descripcion, stock });
+    }
+    guardarCarrito(carrito);
+    actualizarIconoCarrito();
+}
+
+// Función para mostrar la alerta
+function mostrarAlertaCarrito() {
+    const alerta = document.getElementById("alerta-carrito");
+    alerta.classList.remove("d-none");
+    setTimeout(() => alerta.classList.add("d-none"), 2000);
+}
+
+// Modifica mostrarDetallesProducto para incluir cantidad y agregar al carrito
+function mostrarDetallesProducto(producto) {
+    const detalles = `
+        <div class="row">
+            <div class="col-md-5">
+                <img src="${producto.imagen}" class="img-fluid" alt="${producto.nombre}">
+            </div>
+            <div class="col-md-7">
+                <h4>${producto.nombre}</h4>
+                <p>${producto.descripcion}</p>
+                <p><strong>Precio:</strong> $${producto.precio}</p>
+                <p><strong>Stock disponible:</strong> ${producto.cantidad}</p>
+                <div class="rating mb-2">
+                    ${[1,2,3,4,5].map(i => `
+                        <span class="star${i <= producto.rating ? ' active' : ''}">&#9733;</span>
+                    `).join('')}
+                </div>
+                <div class="d-flex align-items-center mb-3">
+                    <button class="btn btn-outline-secondary" id="decreaseQuantity">-</button>
+                    <input type="number" id="productQuantity" value="1" min="1" max="${producto.cantidad}" class="mx-2" style="width: 60px; text-align: center;">
+                    <button class="btn btn-outline-secondary" id="increaseQuantity">+</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('productDetails').innerHTML = detalles;
+
+    // Control de cantidad
+    const quantityInput = document.getElementById('productQuantity');
+    document.getElementById('increaseQuantity').onclick = () => {
+        let val = parseInt(quantityInput.value);
+        if (val < producto.cantidad) quantityInput.value = val + 1;
+    };
+    document.getElementById('decreaseQuantity').onclick = () => {
+        let val = parseInt(quantityInput.value);
+        if (val > 1) quantityInput.value = val - 1;
+    };
+
+    // Habilita o deshabilita el botón de agregar al carrito según stock
+    const addBtn = document.getElementById('add-to-cart-modal');
+    addBtn.disabled = !(producto.cantidad > 0);
+
+    // Evento para agregar al carrito y mostrar alerta
+    addBtn.onclick = function() {
+        const cantidad = parseInt(quantityInput.value) || 1;
+        agregarAlCarrito(
+            producto.id,
+            producto.nombre,
+            parseFloat(producto.precio),
+            cantidad,
+            producto.imagen,
+            producto.descripcion
+        );
+        mostrarAlertaCarrito();
+    };
+
+    // Muestra la modal
+    const modal = new bootstrap.Modal(document.getElementById('productModal'));
+    modal.show();
+}
+
+// Delegación de eventos para productos en resultados de búsqueda
+document.getElementById('search-results-row').addEventListener('click', function(e) {
+    let card = e.target.closest('.card');
+    if (card) {
+        const producto = {
+            id: card.getAttribute('data-id'),
+            nombre: card.getAttribute('data-nombre'),
+            descripcion: card.getAttribute('data-descripcion'),
+            precio: card.getAttribute('data-precio'),
+            cantidad: card.getAttribute('data-cantidad'),
+            rating: card.getAttribute('data-rating'),
+            imagen: card.getAttribute('data-imagen')
+        };
+        mostrarDetallesProducto(producto);
+    }
+});
+
 
 </script>
-
 </body>
 </html>
 {% include 'inc/footer.html' %}
