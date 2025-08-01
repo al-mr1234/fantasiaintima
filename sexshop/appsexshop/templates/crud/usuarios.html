@@ -140,6 +140,16 @@
         <h4 class="card-title" style="text-align: center; color: black;">Gestión de Usuarios</h4>
 
         <!-- Button  modal -->
+          {% if messages %}
+      <div class="messages">
+          {% for message in messages %}
+          <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+              {{ message }}
+          </div>
+          {% endfor %}
+      </div>
+      {% endif %}
+      <br>
 <!-- Modal de Registro -->
 <!-- Botón para abrir el modal de creación -->
 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalRegistrarUsuario">

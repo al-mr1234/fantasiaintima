@@ -499,27 +499,52 @@ def nueva_contrasena(request):
     return render(request, 'login/nuevaContraseña.html')
 
 
+from django.contrib import messages
+from django.contrib.auth.hashers import make_password
+
 def insertarusuario(request):
     if request.method == "POST":
-        if (request.POST.get('PrimerNombre') and request.POST.get('OtrosNombres') and
-            request.POST.get('PrimerApellido') and request.POST.get('SegundoApellido') and
-            request.POST.get('Correo') and request.POST.get('NombreUsuario') and
-            request.POST.get('Contrasena')):
+        # Validar que todos los campos requeridos estén presentes
+        campos = ['PrimerNombre', 'OtrosNombres', 'PrimerApellido', 'SegundoApellido', 'Correo', 'NombreUsuario', 'Contrasena']
+        if all(request.POST.get(campo) for campo in campos):
+            correo = request.POST.get('Correo')
+            nombre_usuario = request.POST.get('NombreUsuario')
 
-            rol_default = roles.objects.get(IdRol=2)  
-            nuevo_usuario = usuario(
-                PrimerNombre=request.POST.get('PrimerNombre'),
-                OtrosNombres=request.POST.get('OtrosNombres'),
-                PrimerApellido=request.POST.get('PrimerApellido'),
-                SegundoApellido=request.POST.get('SegundoApellido'),
-                Correo=request.POST.get('Correo'),
-                NombreUsuario=request.POST.get('NombreUsuario'),
-                Contrasena=make_password(request.POST.get('Contrasena')),
-                idRol=rol_default
-            )
-            nuevo_usuario.save()
-            return redirect('crudUsuarios')  # Redirige a la lista de usuarios
+            # Validar si el correo ya está registrado
+            if usuario.objects.filter(Correo=correo).exists():
+                messages.error(request, 'El correo ya está registrado en el sistema.')
+                return redirect('crudUsuarios')
+
+            # Validar si el nombre de usuario ya está registrado
+            if usuario.objects.filter(NombreUsuario=nombre_usuario).exists():
+                messages.error(request, 'El nombre de usuario ya está registrado en el sistema.')
+                return redirect('crudUsuarios')
+
+            try:
+                rol_default = roles.objects.get(IdRol=2)  # Rol por defecto: cliente
+                nuevo_usuario = usuario(
+                    PrimerNombre=request.POST.get('PrimerNombre'),
+                    OtrosNombres=request.POST.get('OtrosNombres'),
+                    PrimerApellido=request.POST.get('PrimerApellido'),
+                    SegundoApellido=request.POST.get('SegundoApellido'),
+                    Correo=correo,
+                    NombreUsuario=nombre_usuario,
+                    Contrasena=make_password(request.POST.get('Contrasena')),
+                    idRol=rol_default
+                )
+                nuevo_usuario.save()
+                messages.success(request, 'Usuario registrado exitosamente.')
+                return redirect('crudUsuarios')
+
+            except roles.DoesNotExist:
+                messages.error(request, 'El rol especificado no existe.')
+                return redirect('crudUsuarios')
+        else:
+            messages.error(request, 'Todos los campos son obligatorios.')
+            return redirect('crudUsuarios')
+
     return redirect('crudUsuarios')
+
 
 
 def editarusuario(request, id_usuario):
