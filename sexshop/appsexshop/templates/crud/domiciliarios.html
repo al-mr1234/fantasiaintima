@@ -143,6 +143,16 @@
    
         <h4 class="card-title" style="text-align: center; color: black;">Gestión de Domiciliarios</h4>
 
+
+        {% if messages %}
+      <div class="messages">
+          {% for message in messages %}
+          <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+              {{ message }}
+          </div>
+          {% endfor %}
+      </div>
+      {% endif %}
         <!-- Button  modal -->
 <!-- Botón para abrir el modal -->
 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalRegistrarDomiciliario">
@@ -150,6 +160,8 @@
 </button>
 
 <!-- Modal para registrar un nuevo domiciliario -->
+
+ 
 <div class="modal fade" id="modalRegistrarDomiciliario" tabindex="-1" aria-labelledby="modalRegistrarDomiciliarioLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">

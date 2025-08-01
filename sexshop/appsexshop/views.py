@@ -552,29 +552,42 @@ def borrarusuario(request, id_usuario):
 def insertardomiciliario(request):
     if request.method == "POST":
         try:
-            # Asignar automáticamente el rol de domiciliario
             rol_domiciliario = roles.objects.get(IdRol=3)
 
-            # Crear el domiciliario con los datos del formulario
+            tipo_doc = request.POST.get('TipoDocumento')
+            documento = request.POST.get('Documento')
+            correo = request.POST.get('Correo')
+
+            if domiciliario.objects.filter(Documento=documento).exists():
+                messages.error(request, 'El documento ya está registrado en el sistema.')
+                return redirect('crudDomiciliarios')
+
+            if domiciliario.objects.filter(Correo=correo).exists():
+                messages.error(request, 'El correo electrónico ya está registrado en el sistema.')
+                return redirect('crudDomiciliarios')
+
             nuevo_domiciliario = domiciliario(
-                TipoDocumento=request.POST.get('TipoDocumento'),
-                Documento=request.POST.get('Documento'),
+                TipoDocumento=tipo_doc,
+                Documento=documento,
                 NombreDomiciliario=request.POST.get('NombreDomiciliario'),
                 PrimerApellido=request.POST.get('PrimerApellido'),
                 SegundoApellido=request.POST.get('SegundoApellido'),
                 Celular=request.POST.get('Celular'),
-                Ciudad=request.POST.get('Ciudad'),  # Captura la ciudad
-                Correo=request.POST.get('Correo'),
-                IdRol=rol_domiciliario  # Asignar el rol de domiciliario
+                Ciudad=request.POST.get('Ciudad'),
+                Correo=correo,
+                IdRol=rol_domiciliario
             )
 
             nuevo_domiciliario.save()
-
+            messages.success(request, 'Domiciliario registrado exitosamente.')
             return redirect('crudDomiciliarios')
+
         except roles.DoesNotExist:
-            return render(request, 'crud/insertar_domiciliario.html', {'error': 'El rol especificado no existe en el sistema.'})
-    
-    return render(request, 'crud/insertar_domiciliario.html')
+            messages.error(request, 'El rol especificado no existe en el sistema.')
+            return redirect('crudDomiciliarios')
+
+    return redirect('crudDomiciliarios')
+
 
 def editardomiciliario(request, id_domiciliario):
     page = request.GET.get('page', 1)
