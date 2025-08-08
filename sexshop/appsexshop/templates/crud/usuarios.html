@@ -111,7 +111,7 @@
 
               <!-- search -->
               <span style="margin-left: 5%;" class="input-group-text text-body"><i class="fas fa-search" aria-hidden="true"></i></span>
-              <input type="text"  class="form-control" placeholder="Buscar por Correo" id="searchInput" onkeyup="filterUsuarios()">
+              <input type="text"  class="form-control" placeholder="Buscar Usuarios" id="searchInput" onkeyup="filterUsuarios()">
             </div>
           </div>
           <ul class="navbar-nav  justify-content-end">
@@ -351,20 +351,37 @@
 </style>
 
 <script>
-  function filterUsuarios() {
-    const input = document.getElementById('searchInput');
-    const filter = input.value.toLowerCase();
-    const table = document.getElementById('usuariosTable');
-    const tr = table.getElementsByTagName('tr');
+function filterUsuarios() {
+  const input = document.getElementById('searchInput');
+  const filter = input.value
+    .toLowerCase()
+    .normalize("NFD") // separa letras y tildes
+    .replace(/[\u0300-\u036f]/g, ''); // elimina tildes pero mantiene espacios
 
-    for (let i = 1; i < tr.length; i++) { // Comienza en 1 para omitir el encabezado
-      const td = tr[i].getElementsByTagName('td')[5]; // Cambia el índice según la columna que deseas filtrar (Correo)
-      if (td) {
-        const txtValue = td.textContent || td.innerText;
-        tr[i].style.display = txtValue.toLowerCase().indexOf(filter) > -1 ? "" : "none";
-      }
+  const table = document.getElementById('usuariosTable');
+  const tr = table.getElementsByTagName('tr');
+
+  for (let i = 1; i < tr.length; i++) { // Omitimos el encabezado
+    const tds = tr[i].getElementsByTagName('td');
+
+    // Unir todo el texto de la fila
+    let rowText = "";
+    for (let j = 0; j < tds.length; j++) {
+      rowText += (tds[j].textContent || tds[j].innerText) + " ";
     }
+
+    // Normalizar y quitar tildes
+    rowText = rowText
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, '');
+
+    // Comparar ignorando espacios en ambas cadenas
+    const match = rowText.replace(/\s+/g, '').indexOf(filter.replace(/\s+/g, '')) > -1;
+
+    tr[i].style.display = match ? "" : "none";
   }
+}
 </script>
 </div>
 </div>
