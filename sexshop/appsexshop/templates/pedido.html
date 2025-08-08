@@ -247,34 +247,45 @@
 
   //buscador
   document.addEventListener('DOMContentLoaded', function () {
-        const searchInput = document.getElementById('query');
-        const table = document.querySelector('table');
-        const rows = table.querySelectorAll('tbody tr');
-        const noResults = document.getElementById('noResults');
+    const searchInput = document.getElementById('query');
+    const table = document.querySelector('table');
+    const rows = table.querySelectorAll('tbody tr');
+    const noResults = document.getElementById('noResults');
 
-        searchInput.addEventListener('input', function () {
-            // Elimina espacios y convierte a minúsculas
-               const searchTerm = searchInput.value.toLowerCase().replace(/\s+/g, '').replace(/\//g, '-');
+    searchInput.addEventListener('input', function () {
+        const searchTerm = searchInput.value
+            .toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, '') // quita tildes
+            .replace(/\s+/g, '') // quita espacios
+            .replace(/\//g, '-');
 
-            let anyVisible = false;
+        let anyVisible = false;
 
-            rows.forEach(row => {
-                const idPedido = row.cells[0].textContent.toLowerCase().replace(/\s+/g, '');
-                const cliente = row.cells[1].textContent.toLowerCase().replace(/\s+/g, '');
-                const fecha = row.cells[2].textContent.toLowerCase().replace(/\s+/g, '');
-
-                if (idPedido.includes(searchTerm) || cliente.includes(searchTerm) || fecha.includes(searchTerm)) {
-                    row.style.display = '';
-                    anyVisible = true;
-                } else {
-                    row.style.display = 'none';
-                }
+        rows.forEach(row => {
+            // Unimos el texto de todas las celdas de la fila
+            let rowText = '';
+            row.querySelectorAll('td').forEach(cell => {
+                rowText += (cell.textContent || cell.innerText) + ' ';
             });
 
-            // Mostrar mensaje si no hay resultados
-            noResults.style.display = anyVisible ? 'none' : 'block';
+            // Normalizamos el texto de la fila
+            rowText = rowText
+                .toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, '') // quita tildes
+                .replace(/\s+/g, ''); // quita espacios
+
+            if (rowText.includes(searchTerm)) {
+                row.style.display = '';
+                anyVisible = true;
+            } else {
+                row.style.display = 'none';
+            }
         });
+
+        // Mostrar mensaje si no hay resultados
+        noResults.style.display = anyVisible ? 'none' : 'block';
     });
+});
 
 </script>
 </body>
