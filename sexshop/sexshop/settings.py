@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'social_django',  # Nuevo: social-auth-app-django
+    'paypal.standard.ipn',  # PayPal IPN
 ]
 
 # Middleware
@@ -160,5 +161,9 @@ EMAIL_PORT = 587 #es el que utiliza el protocolo smtp
 EMAIL_HOST_USER = 'store.fantasia.intima@gmail.com'
 EMAIL_HOST_PASSWORD = 'mrdz aema ouvd tcts'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# Configuración de PayPal en modo sandbox:
+PAYPAL_RECEIVER_EMAIL = 'sb-ryrqh45119542@business.example.com'  # Tu correo de sandbox
+PAYPAL_TEST = True
 
 

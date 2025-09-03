@@ -1,4 +1,3 @@
-
 from django.db import models
 import random
 from datetime import datetime, timedelta
@@ -6,12 +5,11 @@ import string
 from django.utils import timezone
 
 class categoria(models.Model):
-    IdCategoria = models.AutoField(primary_key=True)  
+    IdCategoria = models.AutoField(primary_key=True) 
     NombreCategoria = models.CharField(max_length=80)
 
     class Meta:
         db_table = 'categoria'
-
 
 class subcategoria(models.Model):
     IdSubCategoria = models.AutoField(primary_key=True)  
@@ -34,7 +32,6 @@ class usuario(models.Model):
     imagen_perfil = models.ImageField(upload_to='profile_images/', null=True, blank=True)
     class Meta:
         db_table = 'usuario'
-
 
 class roles(models.Model):
     IdRol = models.AutoField(primary_key=True)  
@@ -63,7 +60,7 @@ class producto(models.Model):
     Nombre = models.CharField(max_length=100)
     Descripcion = models.CharField(max_length=255)
     Cantidad = models.IntegerField()
-    Precio = models.FloatField()
+    Precio = models.DecimalField(max_digits=10, decimal_places=2)
     FechaVence = models.DateField()
     IdSubCategoria = models.ForeignKey('subcategoria', on_delete=models.CASCADE, db_column='IdSubCategoria')
 
@@ -74,7 +71,7 @@ class producto(models.Model):
 class Calificacion(models.Model):
     IdCalificacion = models.AutoField(primary_key=True)
     Calificacion = models.IntegerField()
-    IdProducto = models.ForeignKey('Producto', on_delete=models.CASCADE, db_column='IdProducto')
+    IdProducto = models.ForeignKey('producto', on_delete=models.CASCADE, db_column='IdProducto')
 
     class Meta:
         db_table = 'calificacion'
@@ -121,15 +118,15 @@ class carritocompras(models.Model):
     codigo_pedido = models.CharField(max_length=100)
     cantidad = models.PositiveIntegerField()
     precio = models.DecimalField(max_digits=10, decimal_places=2)
-    producto = models.ForeignKey('Producto', on_delete=models.CASCADE)
-    precio_total = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    estado = models.CharField(max_length=50)
-    fecha_inicio = models.DateTimeField(auto_now_add=True)
-    fecha_compra = models.DateTimeField(blank=True, null=True)
+    producto = models.ForeignKey('producto', on_delete=models.CASCADE)
+    precio_total = models.DecimalField(max_digits=12, decimal_places=2)
+    estado = models.CharField(max_length=20, default='Pendiente')
+    fecha_compra = models.DateTimeField(null=True, blank=True)
+    usuario = models.ForeignKey('usuario', on_delete=models.SET_NULL, null=True, blank=True)  # Nueva relación
 
-    def save(self):
-        self.precio_total = self.cantidad * self.precio
-        return super().save()
+    def __str__(self):
+        return f"{self.codigo_pedido} - {self.producto.Nombre}"
+    
+    class Meta:
+        db_table = 'appsexshop_carritocompras'
 
-
-   
