@@ -28,6 +28,10 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import check_password
 from .models import Notificacion
 from django.contrib.auth.decorators import login_required
+from paypal.standard.forms import PayPalPaymentsForm
+from django.db.models import Sum, Max, Q
+from django.conf import settings
+from decimal import Decimal
 from django.contrib.auth.models import User
 
 
@@ -885,7 +889,38 @@ def recuperarContraseña(request):
     return render(request, 'login/recuperarcontraseña.html')
 
 def pedido(request):
-    return render(request, 'pedido.html')
+    # Mostrar todos los pedidos del usuario que NO estén cancelados
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return redirect('login')
+
+    codigos_pedidos = carritocompras.objects.filter(
+        usuario_id=user_id
+    ).exclude(
+        estado__iexact='Cancelado'
+    ).values('codigo_pedido').annotate(
+        total=Sum('precio_total'),
+        fecha=Max('fecha_compra'),
+    ).order_by('-fecha')
+
+    pedidos = []
+    for codigo in codigos_pedidos:
+        items = carritocompras.objects.filter(
+            codigo_pedido=codigo['codigo_pedido']
+        ).select_related('usuario', 'producto')
+
+        primer_item = items.first()
+        pedidos.append({
+            'codigo_pedido': codigo['codigo_pedido'],
+            'cliente': f"{primer_item.usuario.PrimerNombre} {primer_item.usuario.PrimerApellido}" if primer_item.usuario else "Invitado",
+            'items': items,
+            'total': codigo['total'],
+            'fecha': codigo['fecha'],
+            'estado': primer_item.estado,
+        })
+
+    return render(request, 'pedido.html', {'pedidos': pedidos})
+
 
 def codigo(request):
     return render(request, 'login/codigo.html')
@@ -1029,3 +1064,245 @@ def agregar_al_carrito(request, producto_id):
             })
 
         return JsonResponse({"success": False, "error": "Sin stock"})
+    
+
+#pasarela de pago
+
+def pago_paypal(request):
+    # Datos básicos de la transacción
+    paypal_dict = {
+        "business": settings.PAYPAL_RECEIVER_EMAIL,
+        "amount": "20.00",
+        "item_name": "Compra de prueba",
+        "invoice": "INV-0001",
+        "currency_code": "USD",
+        "notify_url": request.build_absolute_uri(reverse('paypal-ipn')),
+        "return_url": request.build_absolute_uri(reverse('pago_exitoso')),
+        "cancel_return": request.build_absolute_uri(reverse('pago_cancelado')),
+    }
+
+    form = PayPalPaymentsForm(initial=paypal_dict)
+    return render(request, "pago.html", {"form": form})
+
+
+
+def pago_exitoso(request):
+    return redirect('pedido')  
+
+def pago_cancelado(request):
+    return redirect('carrito')
+@csrf_exempt
+def pago_paypal_carrito(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            total = data.get('total')
+            carrito = data.get('carrito', [])
+            user_id = request.session.get('user_id')
+
+            if not carrito or not total:
+                return JsonResponse({'error': 'Carrito vacío o total no enviado'}, status=400)
+
+            codigo_pedido = f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+            usuario_obj = None
+            if user_id:
+                try:
+                    usuario_obj = usuario.objects.get(IdUsuario=user_id)
+                except usuario.DoesNotExist:
+                    pass
+
+            pedidos_creados = []
+            for item in carrito:
+                id_producto = item.get('IdProducto') or item.get('id') or item.get('idProducto')
+                cantidad = item.get('cantidad', 1)
+                if not id_producto:
+                    return JsonResponse({'error': 'Falta IdProducto en el carrito'}, status=400)
+                try:
+                    prod = producto.objects.get(IdProducto=id_producto)
+                except producto.DoesNotExist:
+                    return JsonResponse({'error': f'Producto con Id {id_producto} no existe'}, status=400)
+                precio_decimal = Decimal(str(prod.Precio))
+                
+                # Cambiamos el estado a "Solicitado" en lugar de "Pagado"
+                pedido = carritocompras.objects.create(
+                    codigo_pedido=codigo_pedido,
+                    cantidad=cantidad,
+                    precio=precio_decimal,
+                    producto=prod,
+                    precio_total=precio_decimal * cantidad,
+                    estado='Solicitado',  # Estado inicial
+                    fecha_compra=timezone.now(),
+                    usuario=usuario_obj
+                )
+                pedidos_creados.append(pedido)
+
+            paypal_dict = {
+                "business": settings.PAYPAL_RECEIVER_EMAIL,
+                "amount": f"{float(total):.2f}",
+                "item_name": "Compra en Fantasía Íntima",
+                "invoice": codigo_pedido,
+                "currency_code": "USD",
+                "notify_url": request.build_absolute_uri(reverse('paypal-ipn')),
+                "return_url": request.build_absolute_uri(reverse('pago_exitoso')),
+                "cancel_return": request.build_absolute_uri(reverse('pago_cancelado')),
+            }
+            form = PayPalPaymentsForm(initial=paypal_dict)
+            return JsonResponse({'form_html': form.render()})
+        except Exception as e:
+            return JsonResponse({'error': f'Error interno: {str(e)}'}, status=500)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@csrf_exempt
+def detalles_pedido(request, codigo_pedido):
+    if request.method == 'GET':
+        try:
+            # Obtener todos los items del pedido con este código
+            items_pedido = carritocompras.objects.filter(codigo_pedido=codigo_pedido).select_related('producto', 'usuario')
+            
+            if not items_pedido.exists():
+                return JsonResponse({'error': 'Pedido no encontrado'}, status=404)
+            
+            # Preparar los datos del pedido
+            primer_item = items_pedido.first()
+            datos_pedido = {
+                'codigo_pedido': codigo_pedido,
+                'cliente': f"{primer_item.usuario.PrimerNombre} {primer_item.usuario.PrimerApellido}" if primer_item.usuario else "Cliente no registrado",
+                'fecha': primer_item.fecha_compra.strftime('%Y-%m-%d'),
+                'total': float(sum(Decimal(item.precio_total) for item in items_pedido)),
+                'articulos': []
+            }
+            
+            # Agregar los artículos del pedido
+            for item in items_pedido:
+                datos_pedido['articulos'].append({
+                    'nombre': item.producto.Nombre,
+                    'cantidad': item.cantidad,
+                    'precio_unitario': float(item.precio),
+                    'total': float(item.precio_total),
+                    'imagen': item.producto.Img.url if item.producto.Img else ''
+                })
+            
+            return JsonResponse(datos_pedido)
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+import logging
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.db import transaction
+from django.urls import reverse
+from .models import carritocompras
+
+logger = logging.getLogger(__name__)
+
+@require_POST
+@transaction.atomic
+def cambiar_estado_pedido(request, codigo_pedido):
+    try:
+        # Get user role and ID from session
+        role = request.session.get('role')
+        user_id = request.session.get('user_id')
+        try:
+            role_int = int(role)
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Permisos inválidos'}, status=403)
+
+        # Check permissions (only admin)
+        if not user_id or role_int != 1:
+            return JsonResponse({'success': False, 'error': 'No tienes permisos para realizar esta acción'}, status=403)
+
+        # Parse JSON body
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Datos inválidos'}, status=400)
+
+        nuevo_estado = (data.get('estado') or '').strip()
+        if not nuevo_estado or nuevo_estado not in ['Aprobado', 'Cancelado', 'Enviado']:
+            return JsonResponse({'success': False, 'error': 'Estado no válido'}, status=400)
+
+        # Update the state in the database
+        pedidos = carritocompras.objects.filter(codigo_pedido=codigo_pedido)
+        if not pedidos.exists():
+            return JsonResponse({'success': False, 'error': 'Pedido no encontrado'}, status=404)
+
+        pedidos.update(estado=nuevo_estado)
+
+        return JsonResponse({
+            'success': True,
+            'nuevo_estado': nuevo_estado,
+            'message': f'Estado actualizado correctamente a {nuevo_estado}',
+            'redirect_url': reverse('solicitud')
+        })
+
+    except Exception as e:
+        logger.exception("Error al cambiar estado del pedido %s: %s", codigo_pedido, str(e))
+        return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'}, status=500)
+
+
+
+
+@require_POST
+def cancelar_pedido(request, codigo_pedido):
+    """
+    Cancela todos los items asociados a un codigo_pedido que no estén ya cancelados.
+    Responde sólo a POST y redirige a la vista 'pedido' (nombre que tienes en urls.py).
+    """
+    pedidos = carritocompras.objects.filter(
+        codigo_pedido=codigo_pedido
+    ).exclude(estado__iexact='Cancelado')  # usar __iexact para evitar problemas de mayúsculas
+
+    if not pedidos.exists():
+        # opcional: puedes usar messages para notificar al usuario
+        return redirect('pedido')
+
+    pedidos.update(estado='Cancelado')  # mantener el mismo texto usado en tu filtrado/plantilla
+    return redirect('pedido')
+
+def solicitud(request):
+    # Pedidos en espera (Solicitados)
+    pedidos_espera = carritocompras.objects.filter(estado='Solicitado').values('codigo_pedido').annotate(
+        total=Sum('precio_total'),
+        fecha=Max('fecha_compra'),
+    ).order_by('-fecha')
+
+    # Pedidos aprobados
+    pedidos_aprobados = carritocompras.objects.filter(estado='Aprobado').values('codigo_pedido').annotate(
+        total=Sum('precio_total'),
+        fecha=Max('fecha_compra'),
+    ).order_by('-fecha')
+
+    # Pedidos cancelados
+    pedidos_cancelados = carritocompras.objects.filter(estado='Cancelado').values('codigo_pedido').annotate(
+        total=Sum('precio_total'),
+        fecha=Max('fecha_compra'),
+    ).order_by('-fecha')
+
+    def procesar_pedidos(pedidos_query):
+        pedidos = []
+        for pedido_data in pedidos_query:
+            items = carritocompras.objects.filter(codigo_pedido=pedido_data['codigo_pedido']).select_related('usuario', 'producto')
+            primer_item = items.first()
+            
+            pedidos.append({
+                'codigo_pedido': pedido_data['codigo_pedido'],
+                'cliente': f"{primer_item.usuario.PrimerNombre} {primer_item.usuario.PrimerApellido}" if primer_item.usuario else "Invitado",
+                'items': items,
+                'total': pedido_data['total'],
+                'fecha': pedido_data['fecha'],
+                'estado': primer_item.estado,
+            })
+        return pedidos
+
+    context = {
+        'pedidos_espera': procesar_pedidos(pedidos_espera),
+        'pedidos_aprobados': procesar_pedidos(pedidos_aprobados),
+        'pedidos_cancelados': procesar_pedidos(pedidos_cancelados),
+    }
+
+    return render(request, 'solicitud.html', context)

@@ -7,6 +7,38 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+document.getElementById('btnPayPal').addEventListener('click', function () {
+    const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    if (carrito.length === 0) {
+      Swal.fire('Carrito vacío', 'Agrega productos antes de pagar.', 'info');
+      return;
+    }
+    let total = 0;
+    carrito.forEach(producto => {
+      total += producto.precio * producto.cantidad;
+    });
+    fetch('/pago-paypal-carrito/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+      body: JSON.stringify({ total, carrito }), // <-- agrega el carrito aquí
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.form_html) {
+          document.getElementById('paypal-form-container').innerHTML = data.form_html;
+        } else {
+          Swal.fire('Error', 'No se pudo generar el formulario de PayPal.', 'error');
+        }
+      })
+      .catch(() => {
+        Swal.fire('Error', 'No se pudo conectar con el servidor.', 'error');
+      });
+  });
+
+
 function mostrarCarrito() {
   const cartContainer = document.getElementById('cart-container');
   const totalAmount = document.getElementById('total-amount');

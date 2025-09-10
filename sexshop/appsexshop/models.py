@@ -118,20 +118,6 @@ class CodigoVerificacion(models.Model):
         return not self.utilizado and timezone.now() < self.fecha_expiracion
 
     
-class carritocompras(models.Model):
-    codigo_pedido = models.CharField(max_length=100)
-    cantidad = models.PositiveIntegerField()
-    precio = models.DecimalField(max_digits=10, decimal_places=2)
-    producto = models.ForeignKey('Producto', on_delete=models.CASCADE)
-    precio_total = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    estado = models.CharField(max_length=50)
-    fecha_inicio = models.DateTimeField(auto_now_add=True)
-    fecha_compra = models.DateTimeField(blank=True, null=True)
-
-    def save(self):
-        self.precio_total = self.cantidad * self.precio
-        return super().save()
-    
 class Notificacion(models.Model):
     titulo = models.CharField(max_length=255)
     mensaje = models.TextField()
@@ -144,6 +130,25 @@ class Notificacion(models.Model):
 
     def __str__(self):
         return f"{self.titulo} ({'Leída' if self.leida else 'No leída'})"
+    
+
+class carritocompras(models.Model):
+    codigo_pedido = models.CharField(max_length=100)
+    cantidad = models.PositiveIntegerField()
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
+    producto = models.ForeignKey('producto', on_delete=models.CASCADE)
+    precio_total = models.DecimalField(max_digits=12, decimal_places=2)
+    estado = models.CharField(max_length=20, default='Pendiente')
+    fecha_compra = models.DateTimeField(null=True, blank=True)
+    usuario = models.ForeignKey('usuario', on_delete=models.SET_NULL, null=True, blank=True) 
+
+    class Meta:
+        db_table = 'appsexshop_carritocompras'
+
+    def __str__(self):
+        return f"{self.codigo_pedido} - {self.producto.Nombre}"
+    
+    
 
 
 

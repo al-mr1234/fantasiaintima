@@ -98,6 +98,8 @@
 
                      {% if request.session.role == 1 %}
                      <li><a class="dropdown-item" href="{% url 'listadocategorias' %}"><i class="fa-regular fa-file"></i> Gestiones</a></li>
+
+                     <li><a class="dropdown-item" href="{% url 'solicitud' %}"><i class="fa-solid fa-file-circle-plus"></i> Solicitud</a></li>
                      {% endif %}
 
                      <li><hr class="dropdown-divider"></li>
