@@ -4,6 +4,7 @@ import random
 from datetime import datetime, timedelta
 import string
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 class categoria(models.Model):
     IdCategoria = models.AutoField(primary_key=True)  
@@ -130,6 +131,20 @@ class carritocompras(models.Model):
     def save(self):
         self.precio_total = self.cantidad * self.precio
         return super().save()
+    
+class Notificacion(models.Model):
+    titulo = models.CharField(max_length=255)
+    mensaje = models.TextField()
+    leida = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
+    administrador = models.ForeignKey('usuario', on_delete=models.CASCADE, db_column='IdUsuario')
+
+    class Meta:
+        db_table = 'notificacion'
+
+    def __str__(self):
+        return f"{self.titulo} ({'Leída' if self.leida else 'No leída'})"
+
 
 
    

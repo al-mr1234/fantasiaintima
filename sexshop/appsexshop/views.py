@@ -26,6 +26,9 @@ from datetime import datetime, timedelta
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import check_password
+from .models import Notificacion
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 
 
 def LadingPage(request):
@@ -942,6 +945,12 @@ from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 import json
 
+
+def lista_notificaciones(request):
+    notificaciones = Notificacion.objects.all().order_by('-fecha')
+
+    return render(request, 'notificaciones.html', {'notificaciones': notificaciones})
+
 @csrf_exempt
 def actualizar_stock(request):
     if request.method == 'POST':
@@ -958,9 +967,19 @@ def actualizar_stock(request):
             prod.Cantidad -= cantidad
             prod.save()
 
-            # Si quieres redirigir a la página de productos
-            return redirect('productosCarrito')  # Usa el nombre de la URL de tu vista de productos
+            # 🔹 Crear notificación si el stock llega a 0
+            if prod.Cantidad == 0:
+                # Buscar el primer admin disponible (rol=1)
+                admin = usuario.objects.filter(idRol__IdRol=1).first()
+                if admin:
+                    Notificacion.objects.create(
+                        administrador=admin,
+                        titulo="Producto agotado",
+                        mensaje=f"El producto '{prod.Nombre}' se ha agotado."
+                    )
 
+            return JsonResponse({'success': True, 'nuevo_stock': prod.Cantidad})
+            
         except producto.DoesNotExist:
             return JsonResponse({'success': False, 'mensaje': 'Producto no encontrado'}, status=404)
         except Exception as e:
