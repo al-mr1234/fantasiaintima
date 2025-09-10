@@ -951,6 +951,25 @@ def lista_notificaciones(request):
 
     return render(request, 'notificaciones.html', {'notificaciones': notificaciones})
 
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def marcar_leida(request, id_notificacion):
+    if request.method == 'POST':
+        try:
+            notificacion = Notificacion.objects.get(id=id_notificacion)
+            notificacion.leida = True
+            notificacion.save()
+
+            # Contar notificaciones pendientes
+            pendientes = Notificacion.objects.filter(leida=False).count()
+
+            return JsonResponse({'success': True, 'pendientes': pendientes})
+        except Notificacion.DoesNotExist:
+            return JsonResponse({'success': False, 'mensaje': 'Notificación no encontrada'}, status=404)
+
+    return JsonResponse({'success': False, 'mensaje': 'Método no permitido'}, status=405)
+
 @csrf_exempt
 def actualizar_stock(request):
     if request.method == 'POST':
