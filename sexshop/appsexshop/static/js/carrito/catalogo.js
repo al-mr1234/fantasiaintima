@@ -16,31 +16,82 @@ const actualizarIconoCarrito = () => {
   
 };
 
+
+const descontarStockServidor = (idProducto, cantidad) => {
+  return fetch('/actualizar_stock/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken') // Necesitamos CSRF si no es csrf_exempt
+    },
+    body: JSON.stringify({ id_producto: idProducto, cantidad })
+  })
+  .then(res => res.json());
+};
+
+// Función para obtener CSRF si lo requieres (Django)
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+
 const agregarAlCarrito = (idProducto, nombre, precio, cantidad, imagen, descripcion) => {
   console.log("agregarAlCarrito llamado con:", idProducto, nombre, precio, cantidad, imagen, descripcion);
-  const carrito = obtenerCarrito();
-  const prod = carrito.find(p => p.IdProducto === idProducto);
-  // Busca el stock real del producto desde el DOM (data-cantidad)
-  let stock = 1;
-  // Busca el producto en el catálogo (puedes ajustar el selector según tu HTML)
-  const card = document.querySelector(`.card[data-id="${idProducto}"]`);
-  if (card) {
-    stock = parseInt(card.getAttribute('data-cantidad')) || 1;
-  }
-  if (prod) {
-    if (prod.cantidad + cantidad > stock) {
-      prod.cantidad = stock;
-    } else {
-      prod.cantidad += cantidad;
-    }
-    prod.stock = stock;
-  } else {
-    carrito.push({ IdProducto: idProducto, nombre, precio, cantidad, imagen, descripcion, stock });
-  }
-  guardarCarrito(carrito);
-  actualizarIconoCarrito();
-  console.log('Producto agregado:', carrito);
+
+  // 🔹 Primero intentar descontar stock en el servidor
+  descontarStockServidor(idProducto, cantidad)
+    .then(data => {
+      if (!data.success) {
+        alert(data.mensaje || 'Error al actualizar stock');
+        return;
+      }
+
+      // 🔹 Si el servidor confirma, seguimos con el flujo normal
+      const carrito = obtenerCarrito();
+      const prod = carrito.find(p => p.IdProducto === idProducto);
+
+      let stock = data.nuevo_stock; // 🔹 Usamos el stock actualizado desde el backend
+
+      const card = document.querySelector(`.card[data-id="${idProducto}"]`);
+      if (card) {
+        card.setAttribute('data-cantidad', stock); // 🔹 Actualizar el stock en el DOM
+        const stockLabel = card.querySelector('.stock-label');
+        if (stockLabel) stockLabel.textContent = `Stock: ${stock}`;
+      }
+
+      if (prod) {
+        if (prod.cantidad + cantidad > stock) {
+          prod.cantidad = stock;
+        } else {
+          prod.cantidad += cantidad;
+        }
+        prod.stock = stock;
+      } else {
+        carrito.push({ IdProducto: idProducto, nombre, precio, cantidad, imagen, descripcion, stock });
+      }
+      guardarCarrito(carrito);
+      actualizarIconoCarrito();
+      mostrarAlerta("Producto agregado al carrito 💖", "success");
+
+      console.log('Producto agregado:', carrito);
+    })
+    .catch(err => {
+      console.error('Error al descontar stock:', err);
+
+    });
 };
+
 
 const mostrarAlertaCarrito = () => {
   const alerta = document.getElementById("alerta-carrito");

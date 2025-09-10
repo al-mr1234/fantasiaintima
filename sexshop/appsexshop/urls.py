@@ -25,7 +25,7 @@ from appsexshop.views import (
     login, registro, solicitar_recuperacion, pedido, verificar_codigo, 	nueva_contrasena,
     insertarsubcategoria, listadosubcategorias, borrarsubcategoria, actualizarsubcategoria,editarusuario,
     borrarusuario, insertarusuario, carrito, lencerias, productosCarrito, insertardomiciliario, editardomiciliario, borrardomiciliario,
-    insertarproducto, editarproducto, borrarproducto, vibradores, disfraces, dildos, logout, eliminar_foto_perfil, eliminar_cuenta, guardar_calificacion, devoluciones
+    insertarproducto, editarproducto, borrarproducto, vibradores, disfraces, dildos, logout, eliminar_foto_perfil, eliminar_cuenta, guardar_calificacion, devoluciones, actualizar_stock, agregar_al_carrito
 )
 
 urlpatterns = [
@@ -70,8 +70,12 @@ urlpatterns = [
     path('productos', productosCarrito, name='productosCarrito'),
     path('eliminar-cuenta/', eliminar_cuenta, name='eliminar_cuenta'),
     path('guardar-calificacion/', guardar_calificacion, name='guardar_calificacion'),
-   
+     path('actualizar_stock/', actualizar_stock, name='actualizar_stock'),
+     path('agregar-al-carrito/<int:producto_id>/', agregar_al_carrito, name="agregar_al_carrito"),
 ]
+
+   
+
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

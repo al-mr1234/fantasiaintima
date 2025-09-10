@@ -12,6 +12,7 @@ from django.db.models import Avg
 from django.views.decorators.csrf import csrf_exempt
 from django.db import IntegrityError
 import re
+import json
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
@@ -936,3 +937,57 @@ def productosCarrito(request):
     productos = producto.objects.all().order_by('-IdProducto') # Obtener todos los productos  
     categorias = categoria.objects.prefetch_related('subcategoria_set').all()
     return render(request, 'carrito/productos.html', {'productos': productos,'categorias': categorias, })
+
+from django.shortcuts import redirect, render
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+@csrf_exempt
+def actualizar_stock(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            id_producto = data.get('id_producto')
+            cantidad = int(data.get('cantidad', 1))
+
+            prod = producto.objects.get(IdProducto=id_producto)
+
+            if prod.Cantidad < cantidad:
+                return JsonResponse({'success': False, 'mensaje': 'Stock insuficiente'}, status=400)
+
+            prod.Cantidad -= cantidad
+            prod.save()
+
+            # Si quieres redirigir a la página de productos
+            return redirect('productosCarrito')  # Usa el nombre de la URL de tu vista de productos
+
+        except producto.DoesNotExist:
+            return JsonResponse({'success': False, 'mensaje': 'Producto no encontrado'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'mensaje': str(e)}, status=500)
+
+    return JsonResponse({'success': False, 'mensaje': 'Método no permitido'}, status=405)
+
+
+@csrf_exempt
+def agregar_al_carrito(request, producto_id):
+    if request.method == "POST":
+        producto = producto.objects.get(pk=producto_id)
+        if producto.Cantidad > 0:
+            producto.Cantidad -= 1
+            producto.save()
+
+            # Lógica para agregar a carrito (en sesión o en DB)
+            carrito = request.session.get("carrito", {})
+            carrito[str(producto_id)] = carrito.get(str(producto_id), 0) + 1
+            request.session["carrito"] = carrito
+
+            total_items = sum(carrito.values())
+
+            return JsonResponse({
+                "success": True,
+                "total_items": total_items,
+                "stock_restante": producto.Cantidad
+            })
+
+        return JsonResponse({"success": False, "error": "Sin stock"})
