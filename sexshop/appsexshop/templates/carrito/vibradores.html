@@ -40,6 +40,25 @@
         <div class="search-container me-3">
           <input id="query" type="search" class="form-control" placeholder="Buscar producto..." autocomplete="off">
         </div>
+
+        {% if request.session.username %}
+
+ {% if request.session.role == 1 %}
+         
+      <a href="{% url 'lista_notificaciones' %}" class="btn btn-outline-secondary position-relative">
+    <i class="fa-solid fa-bell"></i>
+    {% with notificaciones_no_leidas=notificaciones|dictsort:"-fecha"|length %}
+        {% if notificaciones_no_leidas > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {{ notificaciones_no_leidas }}
+            </span>
+        {% endif %}
+    {% endwith %}
+</a>
+
+             {% endif %}
+         {% endif %}
+
         <a href="{% url 'carrito' %}" class="btn btn-outline-secondary me-2">
           <i class="fas fa-shopping-cart"></i> <span id="cartCount">0</span>
         </a>
