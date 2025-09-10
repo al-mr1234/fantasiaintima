@@ -22,8 +22,13 @@
 </head>
 <body>
   <div class="container">
-    <div class="header">
 
+
+     <a style="color: #f5365c; cursor: pointer;" onclick="goBack()">
+        <i class="fas fa-arrow-left"></i> 
+      </a>
+  
+    <div class="header">
       <!-- Sección del perfil -->
     <div class="profile-section">
         <div class="profile-container">
@@ -67,10 +72,7 @@
           </button>
       </form>
           
-        <a href="{% url 'Ladingpage' %}" class="value" style="text-decoration:none;">
-          <i class="fa-solid fa-right-from-bracket"></i>
-          Salir
-        </a>
+        
 
 
 
@@ -233,6 +235,10 @@ function confirmRemovePhoto() {
             });
         }
     });
+}
+
+function goBack() {
+  window.history.back();
 }
 </script> 
 </body>

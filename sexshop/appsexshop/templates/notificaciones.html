@@ -42,9 +42,11 @@
 
 <div class="container mt-5">
   <div class="card p-4">
-    <a href="{% url 'productosCarrito' %}" style="color: #f5365c;"> 
-      <i class="fa-solid fa-arrow-left"></i> 
-    </a>
+   
+
+     <a style="color: #f5365c; cursor: pointer;" onclick="goBack()">
+        <i class="fas fa-arrow-left"></i> 
+      </a>
      
     <br>
     <h3 class="mb-4"> 
@@ -113,6 +115,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+
+function goBack() {
+  window.history.back();
+}
 </script>
 
 </body>
