@@ -59,9 +59,14 @@
     }
 
   .btn:hover{
-    background-color: black;
+    background-color: #ec5876;
     color: white;
   }
+  
+  .btn:active {
+  background-color: #c44461; 
+  color: white;
+}
 
    /*nav y buscador*/
  @media (max-width: 776px) {

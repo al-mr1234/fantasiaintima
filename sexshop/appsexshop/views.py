@@ -896,12 +896,11 @@ def pedido(request):
 
     codigos_pedidos = carritocompras.objects.filter(
         usuario_id=user_id
-    ).exclude(
-        estado__iexact='Cancelado'
     ).values('codigo_pedido').annotate(
         total=Sum('precio_total'),
         fecha=Max('fecha_compra'),
     ).order_by('-fecha')
+
 
     pedidos = []
     for codigo in codigos_pedidos:
@@ -914,7 +913,7 @@ def pedido(request):
             'codigo_pedido': codigo['codigo_pedido'],
             'cliente': f"{primer_item.usuario.PrimerNombre} {primer_item.usuario.PrimerApellido}" if primer_item.usuario else "Invitado",
             'items': items,
-            'total': codigo['total'],
+            'total': "{:,.2f}".format(codigo['total']).replace(',', 'X').replace('.', ',').replace('X', '.'),
             'fecha': codigo['fecha'],
             'estado': primer_item.estado,
         })
