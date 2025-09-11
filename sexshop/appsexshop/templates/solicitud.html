@@ -1,3 +1,4 @@
+
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
@@ -19,7 +20,7 @@
     }
     .nav-tabs .nav-link.active {
       font-weight: bold;
-      border-bottom: 3px solid #007bff;
+      border-bottom: 3px solid #dc3545;;
     }
     .tab-content {
       padding: 20px 0;
@@ -47,11 +48,11 @@
 </head>
 <body>
   <div class="container py-4">
-    <h2 class="mb-4">Gestión de Pedidos</h2>
+    <h2 class="mb-4"><center> Gestión de Pedidos </center></h2>
 
     <!-- Flecha de regreso -->
     <a href="{% url 'Ladingpage' %}" class="btn btn-link mb-3" style="font-size: 1.3rem;">
-      <i class="fas fa-arrow-left"></i> Volver
+      <i class="fas fa-arrow-left" style="color: #dc3545;"></i>
     </a>
 
     <!-- Pestañas -->
@@ -98,13 +99,13 @@
               <tr>
                 <td>{{ pedido.codigo_pedido }}</td>
                 <td>{{ pedido.cliente }}</td>
-                <td>{{ pedido.fecha|date:"d/m/Y H:i" }}</td>
-                <td>${{ pedido.total|floatformat:2 }}</td>
+                <td>{{ pedido.fecha|date:"d/m/Y" }}</td>
+                <td>{{ pedido.total }}</td>
                 <td><span class="badge badge-estado badge-espera">En espera</span></td>
                 <td class="acciones-btn">
-                  <button class="btn btn-sm btn-info" data-toggle="modal" data-target="#pedidoModal" 
+                  <button class="btn btn-sm btn-info" style="background-color: #dc3545;" data-toggle="modal" data-target="#pedidoModal" 
                           onclick="mostrarDetallesPedido('{{ pedido.codigo_pedido }}')">
-                      <i class="fas fa-eye"></i>
+                      <i class="fas fa-eye" ></i>
                   </button>
                   <button class="btn btn-sm btn-success aprobar-pedido" data-codigo="{{ pedido.codigo_pedido }}">
                       <i class="fas fa-check"></i> Aprobar
@@ -149,7 +150,7 @@
                 <td>${{ pedido.total|floatformat:2 }}</td>
                 <td><span class="badge badge-estado badge-aprobado">Aprobado</span></td>
                 <td class="acciones-btn">
-                  <button class="btn btn-sm btn-info" data-toggle="modal" data-target="#pedidoModal" 
+                  <button class="btn btn-sm btn-info" style="background-color: #dc3545;" data-toggle="modal" data-target="#pedidoModal" 
                           onclick="mostrarDetallesPedido('{{ pedido.codigo_pedido }}')">
                     <i class="fas fa-eye"></i>
                   </button>
@@ -193,9 +194,9 @@
                 <td>${{ pedido.total|floatformat:2 }}</td>
                 <td><span class="badge badge-estado badge-cancelado">Cancelado</span></td>
                 <td>
-                  <button class="btn btn-sm btn-info" data-toggle="modal" data-target="#pedidoModal" 
+                  <button class="btn btn-sm btn-info" style="background-color: #c0b7b8;" data-toggle="modal" data-target="#pedidoModal" 
                           onclick="mostrarDetallesPedido('{{ pedido.codigo_pedido }}')">
-                    <i class="fas fa-eye"></i>
+                    <i class="fas fa-eye" style="color: black;"></i>
                   </button>
                 </td>
               </tr>
@@ -400,7 +401,14 @@ function cambiarEstadoPedido(button, codigo, estado) {
                 $('#pedidoId').text(data.codigo_pedido || codigoPedido);
                 $('#pedidoCliente').text(data.cliente || '');
                 $('#pedidoFecha').text(data.fecha || '');
-                $('#pedidoTotal').text(data.total ? parseFloat(data.total).toFixed(2) : '0.00');
+                $('#pedidoTotal').text(
+                  new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  }).format(data.total || 0)
+                );
 
                 // Llenar artículos
                 const articulosList = $('#pedidoArticulos');
@@ -410,8 +418,19 @@ function cambiarEstadoPedido(button, codigo, estado) {
                             <tr>
                                 <td>${art.nombre || ''}</td>
                                 <td>${art.cantidad || ''}</td>
-                                <td>$${parseFloat(art.precio_unitario || 0).toFixed(2)}</td>
-                                <td>$${parseFloat(art.total || 0).toFixed(2)}</td>
+                                  <td>${new Intl.NumberFormat('es-CO', {
+                              style: 'currency',
+                              currency: 'COP',
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                          }).format(art.precio_unitario || 0)}</td>
+
+                          <td>${new Intl.NumberFormat('es-CO', {
+                              style: 'currency',
+                              currency: 'COP',
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                          }).format(art.total || 0)}</td>
                                 <td>${art.imagen ? `<img src="${art.imagen}" class="producto-img">` : ''}</td>
                             </tr>
                         `);
