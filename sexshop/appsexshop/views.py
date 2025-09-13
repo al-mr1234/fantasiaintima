@@ -34,6 +34,7 @@ from django.conf import settings
 from decimal import Decimal
 from django.contrib.auth.models import User
 
+from django.db import transaction
 
 def LadingPage(request):
     categorias = categoria.objects.all().prefetch_related('subcategoria_set')
@@ -777,9 +778,6 @@ def guardar_calificacion(request):
             print(f"Error interno: {str(e)}")
             return JsonResponse({'success': False, 'mensaje': str(e)})
 
-   
-
-    
 
 # region perfiles
 def perfiles(request):
@@ -889,18 +887,26 @@ def recuperarContraseña(request):
     return render(request, 'login/recuperarcontraseña.html')
 
 def pedido(request):
-    # Mostrar todos los pedidos del usuario que NO estén cancelados
+    # 1. Verifica si el usuario está logueado
     user_id = request.session.get('user_id')
+    role = request.session.get('role')  # 👈 recupera el rol desde la sesión
     if not user_id:
         return redirect('login')
 
-    codigos_pedidos = carritocompras.objects.filter(
-        usuario_id=user_id
-    ).values('codigo_pedido').annotate(
-        total=Sum('precio_total'),
-        fecha=Max('fecha_compra'),
-    ).order_by('-fecha')
-
+    # 2. Si es admin (rol 1), trae TODOS los pedidos
+    if role == 1:
+        codigos_pedidos = carritocompras.objects.values('codigo_pedido').annotate(
+            total=Sum('precio_total'),
+            fecha=Max('fecha_compra'),
+        ).order_by('-fecha')
+    else:
+        # Si es un usuario normal, solo sus pedidos
+        codigos_pedidos = carritocompras.objects.filter(
+            usuario_id=user_id
+        ).values('codigo_pedido').annotate(
+            total=Sum('precio_total'),
+            fecha=Max('fecha_compra'),
+        ).order_by('-fecha')
 
     pedidos = []
     for codigo in codigos_pedidos:
@@ -1004,42 +1010,76 @@ def marcar_leida(request, id_notificacion):
 
     return JsonResponse({'success': False, 'mensaje': 'Método no permitido'}, status=405)
 
+
+
+
+
 @csrf_exempt
 def actualizar_stock(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            id_producto = data.get('id_producto')
-            cantidad = int(data.get('cantidad', 1))
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'mensaje': 'Método no permitido'}, status=405)
 
-            prod = producto.objects.get(IdProducto=id_producto)
+    try:
+        data = json.loads(request.body)
 
-            if prod.Cantidad < cantidad:
-                return JsonResponse({'success': False, 'mensaje': 'Stock insuficiente'}, status=400)
+        # Si llega una lista "carrito" procesamos en bloque (recomendado)
+        carrito = data.get('carrito')
+        if carrito:
+            nuevo_stocks = []
+            with transaction.atomic():
+                # 1) Validar stock de todos los ítems primero (lock para concurrencia)
+                productos_map = {}
+                for item in carrito:
+                    pid = item.get('id_producto') or item.get('IdProducto')
+                    cantidad = int(item.get('cantidad', 1))
+                    prod = producto.objects.select_for_update().get(IdProducto=pid)
+                    if prod.Cantidad < cantidad:
+                        return JsonResponse({'success': False, 'mensaje': f'Stock insuficiente de {prod.Nombre}', 'id_producto': pid}, status=400)
+                    productos_map[pid] = (prod, cantidad)
 
-            prod.Cantidad -= cantidad
-            prod.save()
+                # 2) Si todo está ok, descontar
+                for pid, (prod, cantidad) in productos_map.items():
+                    prod.Cantidad -= cantidad
+                    prod.save()
+                    nuevo_stocks.append({'id_producto': pid, 'nuevo_stock': prod.Cantidad})
 
-            # 🔹 Crear notificación si el stock llega a 0
-            if prod.Cantidad == 0:
-                # Buscar el primer admin disponible (rol=1)
-                admin = usuario.objects.filter(idRol__IdRol=1).first()
-                if admin:
-                    Notificacion.objects.create(
-                        administrador=admin,
-                        titulo="Producto agotado",
-                        mensaje=f"El producto '{prod.Nombre}' se ha agotado."
-                    )
+                    if prod.Cantidad == 0:
+                        admin = usuario.objects.filter(idRol__IdRol=1).first()
+                        if admin:
+                            Notificacion.objects.create(
+                                administrador=admin,
+                                titulo="Producto agotado",
+                                mensaje=f"El producto '{prod.Nombre}' se ha agotado."
+                            )
 
-            return JsonResponse({'success': True, 'nuevo_stock': prod.Cantidad})
-            
-        except producto.DoesNotExist:
-            return JsonResponse({'success': False, 'mensaje': 'Producto no encontrado'}, status=404)
-        except Exception as e:
-            return JsonResponse({'success': False, 'mensaje': str(e)}, status=500)
+            return JsonResponse({'success': True, 'nuevo_stocks': nuevo_stocks})
 
-    return JsonResponse({'success': False, 'mensaje': 'Método no permitido'}, status=405)
+        # Si no hay "carrito", permitir compatibilidad con petición individual
+        id_producto = data.get('id_producto')
+        cantidad = int(data.get('cantidad', 1))
+        prod = producto.objects.get(IdProducto=id_producto)
 
+        if prod.Cantidad < cantidad:
+            return JsonResponse({'success': False, 'mensaje': 'Stock insuficiente'}, status=400)
+
+        prod.Cantidad -= cantidad
+        prod.save()
+
+        if prod.Cantidad == 0:
+            admin = usuario.objects.filter(idRol__IdRol=1).first()
+            if admin:
+                Notificacion.objects.create(
+                    administrador=admin,
+                    titulo="Producto agotado",
+                    mensaje=f"El producto '{prod.Nombre}' se ha agotado."
+                )
+
+        return JsonResponse({'success': True, 'nuevo_stock': prod.Cantidad})
+
+    except producto.DoesNotExist:
+        return JsonResponse({'success': False, 'mensaje': 'Producto no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'mensaje': str(e)}, status=500)
 
 @csrf_exempt
 def agregar_al_carrito(request, producto_id):
@@ -1049,7 +1089,6 @@ def agregar_al_carrito(request, producto_id):
             producto.Cantidad -= 1
             producto.save()
 
-            # Lógica para agregar a carrito (en sesión o en DB)
             carrito = request.session.get("carrito", {})
             carrito[str(producto_id)] = carrito.get(str(producto_id), 0) + 1
             request.session["carrito"] = carrito
