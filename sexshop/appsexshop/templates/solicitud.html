@@ -57,24 +57,42 @@
 
     <!-- Pestañas -->
     <ul class="nav nav-tabs" id="pedidosTab" role="tablist">
+
       <li class="nav-item">
         <a class="nav-link active" id="espera-tab" data-toggle="tab" href="#espera" role="tab">
           <i class="fas fa-clock mr-1"></i> En espera
           <span class="badge badge-pill badge-warning ml-1">{{ pedidos_espera|length }}</span>
         </a>
       </li>
+
       <li class="nav-item">
         <a class="nav-link" id="aprobados-tab" data-toggle="tab" href="#aprobados" role="tab">
           <i class="fas fa-check-circle mr-1"></i> Aceptados
           <span class="badge badge-pill badge-success ml-1">{{ pedidos_aprobados|length }}</span>
         </a>
       </li>
+
+         <li class="nav-item">
+     <a class="nav-link" id="enviados-tab" data-toggle="tab" href="#enviados" role="tab">
+       <i class="fas fa-truck mr-1"></i> Enviados
+       <span class="badge badge-pill badge-primary ml-1">{{ pedidos_enviados|length }}</span>
+     </a>
+   </li>
+   
+   <li class="nav-item">
+     <a class="nav-link" id="entregados-tab" data-toggle="tab" href="#entregados" role="tab">
+       <i class="fas fa-box-open mr-1"></i> Entregados
+       <span class="badge badge-pill badge-dark ml-1">{{ pedidos_entregados|length }}</span>
+     </a>
+   </li>
+
       <li class="nav-item">
         <a class="nav-link" id="cancelados-tab" data-toggle="tab" href="#cancelados" role="tab">
           <i class="fas fa-times-circle mr-1"></i> Cancelados
           <span class="badge badge-pill badge-danger ml-1">{{ pedidos_cancelados|length }}</span>
         </a>
       </li>
+
     </ul>
 
     <!-- Contenido de las pestañas -->
@@ -169,6 +187,94 @@
         </div>
         {% endif %}
       </div>
+
+      <!-- Pestaña Enviados -->
+<div class="tab-pane fade" id="enviados" role="tabpanel">
+  {% if pedidos_enviados %}
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead class="thead-light">
+        <tr>
+          <th>ID Pedido</th>
+          <th>Cliente</th>
+          <th>Fecha</th>
+          <th>Total</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pedido in pedidos_enviados %}
+        <tr>
+          <td>{{ pedido.codigo_pedido }}</td>
+          <td>{{ pedido.cliente }}</td>
+          <td>{{ pedido.fecha|date:"d/m/Y H:i" }}</td>
+          <td>${{ pedido.total|floatformat:2 }}</td>
+          <td><span class="badge badge-estado badge-primary">Enviado</span></td>
+          <td class="acciones-btn">
+
+            <button class="btn btn-sm btn-info" style="background-color: #dc3545;" data-toggle="modal" data-target="#pedidoModal" 
+                    onclick="mostrarDetallesPedido('{{ pedido.codigo_pedido }}')">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-dark entregar-pedido" data-codigo="{{ pedido.codigo_pedido }}">
+              <i class="fas fa-box-open"></i> Entregar
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-info mt-3">
+    No hay pedidos enviados.
+  </div>
+  {% endif %}
+</div>
+
+<!-- Pestaña Entregados -->
+<div class="tab-pane fade" id="entregados" role="tabpanel">
+  {% if pedidos_entregados %}
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead class="thead-light">
+        <tr>
+          <th>ID Pedido</th>
+          <th>Cliente</th>
+          <th>Fecha</th>
+          <th>Total</th>
+          <th>Estado</th>
+           <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pedido in pedidos_entregados %}
+        <tr>
+          <td>{{ pedido.codigo_pedido }}</td>
+          <td>{{ pedido.cliente }}</td>
+          <td>{{ pedido.fecha|date:"d/m/Y H:i" }}</td>
+          <td>${{ pedido.total|floatformat:2 }}</td>
+          <td><span class="badge badge-estado badge-primary">Entregado</span></td>
+          <td class="acciones-btn">
+
+            <button class="btn btn-sm btn-info" style="background-color: #dc3545;" data-toggle="modal" data-target="#pedidoModal" 
+                    onclick="mostrarDetallesPedido('{{ pedido.codigo_pedido }}')">
+              <i class="fas fa-eye"></i>
+            </button>
+
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-info mt-3">
+    No hay pedidos entregados.
+  </div>
+  {% endif %}
+</div>
 
       <!-- Pestaña Cancelados -->
       <div class="tab-pane fade" id="cancelados" role="tabpanel">
@@ -347,36 +453,41 @@ function cambiarEstadoPedido(button, codigo, estado) {
 }
 
     // Uso en los botones
-    $(document).on('click', '.aprobar-pedido, .rechazar-pedido, .enviar-pedido', function() {
-        const button = $(this);
-        const codigo = button.data('codigo');
-        let estado = '';
-        let action = '';
+     $(document).on('click', '.aprobar-pedido, .rechazar-pedido, .enviar-pedido, .entregar-pedido', function() {
+    const button = $(this);
+    const codigo = button.data('codigo');
+    let estado = '';
+    let action = '';
+    
+    if (button.hasClass('aprobar-pedido')) {
+        estado = 'Aprobado';
+        action = 'aprobar';
+    } else if (button.hasClass('rechazar-pedido')) {
+        estado = 'Cancelado';
+        action = 'rechazar';
+    } else if (button.hasClass('enviar-pedido')) {
+        estado = 'Enviado';
+        action = 'enviar';
+    } else if (button.hasClass('entregar-pedido')) {
+        estado = 'Entregado';
+        action = 'entregar';
+    }
+
         
-        if (button.hasClass('aprobar-pedido')) {
-            estado = 'Aprobado';
-            action = 'aprobar';
-        } else if (button.hasClass('rechazar-pedido')) {
-            estado = 'Cancelado';
-            action = 'rechazar';
-        } else if (button.hasClass('enviar-pedido')) {
-            estado = 'Enviado';
-            action = 'enviar';
-        }
         
         Swal.fire({
-            title: `¿${action.charAt(0).toUpperCase() + action.slice(1)} pedido?`,
-            text: `¿Estás seguro de que deseas ${action} este pedido?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: `Sí, ${action}`,
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                cambiarEstadoPedido(button, codigo, estado);
-            }
-        });
+        title: `¿${action.charAt(0).toUpperCase() + action.slice(1)} pedido?`,
+        text: `¿Estás seguro de que deseas ${action} este pedido?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: `Sí, ${action}`,
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            cambiarEstadoPedido(button, codigo, estado);
+        }
     });
+});
 
     function mostrarDetallesPedido(codigoPedido) {
         // Mostrar spinner y ocultar contenido

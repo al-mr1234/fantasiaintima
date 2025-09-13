@@ -1011,9 +1011,6 @@ def marcar_leida(request, id_notificacion):
     return JsonResponse({'success': False, 'mensaje': 'Método no permitido'}, status=405)
 
 
-
-
-
 @csrf_exempt
 def actualizar_stock(request):
     if request.method != 'POST':
@@ -1121,7 +1118,6 @@ def pago_paypal(request):
 
     form = PayPalPaymentsForm(initial=paypal_dict)
     return render(request, "pago.html", {"form": form})
-
 
 
 def pago_exitoso(request):
@@ -1238,6 +1234,7 @@ from .models import carritocompras
 
 logger = logging.getLogger(__name__)
 
+#cambiar estado de los pedidos
 @require_POST
 @transaction.atomic
 def cambiar_estado_pedido(request, codigo_pedido):
@@ -1261,8 +1258,8 @@ def cambiar_estado_pedido(request, codigo_pedido):
             return JsonResponse({'success': False, 'error': 'Datos inválidos'}, status=400)
 
         nuevo_estado = (data.get('estado') or '').strip()
-        if not nuevo_estado or nuevo_estado not in ['Aprobado', 'Cancelado', 'Enviado']:
-            return JsonResponse({'success': False, 'error': 'Estado no válido'}, status=400)
+        if not nuevo_estado or nuevo_estado not in ['Aprobado', 'Cancelado', 'Enviado', 'Entregado']:
+          return JsonResponse({'success': False, 'error': 'Estado no válido'}, status=400)
 
         # Update the state in the database
         pedidos = carritocompras.objects.filter(codigo_pedido=codigo_pedido)
@@ -1281,8 +1278,6 @@ def cambiar_estado_pedido(request, codigo_pedido):
     except Exception as e:
         logger.exception("Error al cambiar estado del pedido %s: %s", codigo_pedido, str(e))
         return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'}, status=500)
-
-
 
 
 @require_POST
@@ -1315,6 +1310,18 @@ def solicitud(request):
         fecha=Max('fecha_compra'),
     ).order_by('-fecha')
 
+    # Pedidos enviados
+    pedidos_enviados = carritocompras.objects.filter(estado='Enviado').values('codigo_pedido').annotate(
+        total=Sum('precio_total'),
+        fecha=Max('fecha_compra'),
+    ).order_by('-fecha')
+
+    # Pedidos entregados
+    pedidos_entregados = carritocompras.objects.filter(estado='Entregado').values('codigo_pedido').annotate(
+        total=Sum('precio_total'),
+        fecha=Max('fecha_compra'),
+    ).order_by('-fecha')
+
     # Pedidos cancelados
     pedidos_cancelados = carritocompras.objects.filter(estado='Cancelado').values('codigo_pedido').annotate(
         total=Sum('precio_total'),
@@ -1340,6 +1347,8 @@ def solicitud(request):
     context = {
         'pedidos_espera': procesar_pedidos(pedidos_espera),
         'pedidos_aprobados': procesar_pedidos(pedidos_aprobados),
+        'pedidos_enviados': procesar_pedidos(pedidos_enviados),
+        'pedidos_entregados': procesar_pedidos(pedidos_entregados),
         'pedidos_cancelados': procesar_pedidos(pedidos_cancelados),
     }
 
