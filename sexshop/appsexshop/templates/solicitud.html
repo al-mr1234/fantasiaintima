@@ -46,6 +46,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="container py-4">
     <h2 class="mb-4"><center> Gestión de Pedidos </center></h2>
@@ -121,9 +122,9 @@
                 <td>{{ pedido.total }}</td>
                 <td><span class="badge badge-estado badge-espera">En espera</span></td>
                 <td class="acciones-btn">
-                  <button class="btn btn-sm btn-info" style="background-color: #dc3545;" data-toggle="modal" data-target="#pedidoModal" 
+                  <button class="btn btn-sm btn-info" style="background-color: #c0b7b8;" data-toggle="modal" data-target="#pedidoModal" 
                           onclick="mostrarDetallesPedido('{{ pedido.codigo_pedido }}')">
-                      <i class="fas fa-eye" ></i>
+                      <i class="fas fa-eye" style="color: black;" ></i>
                   </button>
                   <button class="btn btn-sm btn-success aprobar-pedido" data-codigo="{{ pedido.codigo_pedido }}">
                       <i class="fas fa-check"></i> Aprobar
@@ -168,12 +169,12 @@
                 <td>${{ pedido.total|floatformat:2 }}</td>
                 <td><span class="badge badge-estado badge-aprobado">Aprobado</span></td>
                 <td class="acciones-btn">
-                  <button class="btn btn-sm btn-info" style="background-color: #dc3545;" data-toggle="modal" data-target="#pedidoModal" 
+                  <button class="btn btn-sm btn-info" style="background-color: #c0b7b8;" data-toggle="modal" data-target="#pedidoModal" 
                           onclick="mostrarDetallesPedido('{{ pedido.codigo_pedido }}')">
-                    <i class="fas fa-eye"></i>
+                    <i class="fas fa-eye" style="color: black;"></i>
                   </button>
                   <button class="btn btn-sm btn-warning enviar-pedido" data-codigo="{{ pedido.codigo_pedido }}">
-                    <i class="fas fa-truck"></i> Enviar
+                    <i class="fas fa-truck" ></i> Enviar
                   </button>
                 </td>
               </tr>
@@ -213,11 +214,11 @@
           <td><span class="badge badge-estado badge-primary">Enviado</span></td>
           <td class="acciones-btn">
 
-            <button class="btn btn-sm btn-info" style="background-color: #dc3545;" data-toggle="modal" data-target="#pedidoModal" 
+            <button class="btn btn-sm btn-info" style="background-color: #c0b7b8;" data-toggle="modal" data-target="#pedidoModal" 
                     onclick="mostrarDetallesPedido('{{ pedido.codigo_pedido }}')">
-              <i class="fas fa-eye"></i>
+              <i class="fas fa-eye" style="color: black;"></i>
             </button>
-            <button class="btn btn-sm btn-dark entregar-pedido" data-codigo="{{ pedido.codigo_pedido }}">
+            <button class="btn btn-sm btn-dark entregar-pedido" style="background-color: green;"  data-codigo="{{ pedido.codigo_pedido }}">
               <i class="fas fa-box-open"></i> Entregar
             </button>
           </td>
