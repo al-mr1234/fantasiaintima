@@ -1050,7 +1050,7 @@ def pedido(request):
     if role == 1:
         pedidos_qs = HistorialPedido.objects.all().order_by('-Fecha')
     else:
-        pedidos_qs = HistorialPedido.objects.filter(UsuarioId=user_id).order_by('-fecha')
+        pedidos_qs = HistorialPedido.objects.filter(UsuarioId=user_id).order_by('-Fecha')
 
     pedidos = []
     for p in pedidos_qs:
@@ -1114,81 +1114,6 @@ def pago_cancelado(request):
     return redirect('carrito')
 
 
-@csrf_exempt
-def pago_paypal_carrito(request):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            total = Decimal(str(data.get('total')))
-            carrito = data.get('carrito', [])
-            user_id = request.session.get('user_id')
-
-            if not carrito:
-                return JsonResponse({'error': 'Carrito vacío'}, status=400)
-
-            codigo_pedido = f"INV-{timezone.now().strftime('%Y%m%d%H%M%S')}"
-
-            # Crear el encabezado
-            pedido = HistorialPedido.objects.create(
-                CodigoPedido=codigo_pedido,
-                UsuarioId=user_id,
-                Fecha=timezone.now(),
-                Total=total,
-                Estado='Solicitado'
-            )
-
-            # Crear los detalles
-            for item in carrito:
-                id_producto = item.get('IdProducto') or item.get('id')
-                cantidad = item.get('cantidad', 1)
-                prod = producto.objects.get(IdProducto=id_producto)
-                HistorialPedidoDetalle.objects.create(
-                    HistorialId=pedido.Id,
-                    ProductoId=prod.IdProducto,
-                    Cantidad=cantidad,
-                    PrecioUnitario=prod.Precio
-                )
-                prod.Cantidad -= cantidad
-                prod.save()
-
-            return JsonResponse({'success': True, 'codigo_pedido': codigo_pedido})
-        except Exception as e:
-            return JsonResponse({'error': f'Error interno: {str(e)}'}, status=500)
-
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
-
-
-@csrf_exempt
-def detalles_pedido(request, codigo_pedido):
-    if request.method == 'GET':
-        try:
-            pedido = HistorialPedido.objects.get(CodigoPedido=codigo_pedido)
-            detalles = HistorialPedidoDetalle.objects.filter(HistorialId=pedido.Id).select_related('ProductoId')
-
-            datos_pedido = {
-                'codigo_pedido': pedido.CodigoPedido,
-                'cliente': f"{pedido.usuario.PrimerNombre} {pedido.usuario.PrimerApellido}" if pedido.usuario else "Cliente no registrado",
-                'fecha': pedido.Fecha.strftime('%Y-%m-%d'),
-                'total': float(pedido.Total),
-                'articulos': []
-            }
-
-            for item in detalles:
-                datos_pedido['articulos'].append({
-                    'nombre': item.ProductoId.Nombre,
-                    'cantidad': item.Cantidad,
-                    'precio_unitario': float(item.PrecioUnitario),
-                    'total': float(item.PrecioUnitario * item.Cantidad),
-                    'imagen': item.ProductoId.Img.url if item.ProductoId.Img else ''
-                })
-
-            return JsonResponse(datos_pedido)
-
-        except HistorialPedido.DoesNotExist:
-            return JsonResponse({'error': 'Pedido no encontrado'}, status=404)
-
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
-
 
 import logging
 from django.http import JsonResponse
@@ -1196,100 +1121,209 @@ from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.urls import reverse
 
-logger = logging.getLogger(__name__)
 
-#cambiar estado de los pedidos
+logger = logging.getLogger(__name__)
+@csrf_exempt
+def pago_paypal_carrito(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            total = data.get('total')
+            carrito = data.get('carrito', [])
+            user_id = request.session.get('user_id')
+
+            if not carrito or not total:
+                return JsonResponse({'error': 'Carrito vacío o total no enviado'}, status=400)
+
+            codigo_pedido = f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+            usuario_obj = None
+            if user_id:
+                try:
+                    usuario_obj = usuario.objects.get(IdUsuario=user_id)
+                except usuario.DoesNotExist:
+                    pass
+
+            # Crear el pedido principal
+            total_decimal = Decimal(str(total))
+            pedido_principal = HistorialPedido.objects.create(
+                CodigoPedido=codigo_pedido,
+                UsuarioId=usuario_obj,
+                Total=total_decimal,
+                Estado='Solicitado'
+            )
+
+            # Crear los detalles del pedido
+            for item in carrito:
+                id_producto = item.get('IdProducto') or item.get('id') or item.get('idProducto')
+                cantidad = item.get('cantidad', 1)
+                if not id_producto:
+                    return JsonResponse({'error': 'Falta IdProducto en el carrito'}, status=400)
+                try:
+                    prod = producto.objects.get(IdProducto=id_producto)
+                except producto.DoesNotExist:
+                    return JsonResponse({'error': f'Producto con Id {id_producto} no existe'}, status=400)
+                
+                precio_decimal = Decimal(str(prod.Precio))
+                
+                HistorialPedidoDetalle.objects.create(
+                    HistorialId=pedido_principal,
+                    ProductoId=prod,
+                    Cantidad=cantidad,
+                    PrecioUnitario=precio_decimal
+                )
+
+            paypal_dict = {
+                "business": settings.PAYPAL_RECEIVER_EMAIL,
+                "amount": f"{float(total):.2f}",
+                "item_name": "Compra en Fantasía Íntima",
+                "invoice": codigo_pedido,
+                "currency_code": "USD",
+                "notify_url": request.build_absolute_uri(reverse('paypal-ipn')),
+                "return_url": request.build_absolute_uri(reverse('pago_exitoso')),
+                "cancel_return": request.build_absolute_uri(reverse('pago_cancelado')),
+            }
+            form = PayPalPaymentsForm(initial=paypal_dict)
+            return JsonResponse({'form_html': form.render()})
+        except Exception as e:
+            return JsonResponse({'error': f'Error interno: {str(e)}'}, status=500)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@csrf_exempt
+def detalles_pedido(request, codigo_pedido):
+    if request.method == 'GET':
+        try:
+            # Obtener el pedido principal
+            try:
+                pedido = HistorialPedido.objects.get(CodigoPedido=codigo_pedido)
+            except HistorialPedido.DoesNotExist:
+                return JsonResponse({'error': 'Pedido no encontrado'}, status=404)
+            
+            # Obtener los detalles del pedido
+            detalles = HistorialPedidoDetalle.objects.filter(HistorialId=pedido).select_related('ProductoId')
+            
+            # Preparar los datos del pedido
+            datos_pedido = {
+                'codigo_pedido': codigo_pedido,
+                'cliente': f"{pedido.UsuarioId.PrimerNombre} {pedido.UsuarioId.PrimerApellido}" if pedido.UsuarioId else "Cliente no registrado",
+                'fecha': pedido.Fecha.strftime('%Y-%m-%d'),
+                'total': float(pedido.Total),
+                'articulos': []
+            }
+            
+            # Agregar los artículos del pedido
+            for detalle in detalles:
+                datos_pedido['articulos'].append({
+                    'nombre': detalle.ProductoId.Nombre,
+                    'cantidad': detalle.Cantidad,
+                    'precio_unitario': float(detalle.PrecioUnitario),
+                    'total': float(detalle.PrecioUnitario * detalle.Cantidad),
+                    'imagen': detalle.ProductoId.Img.url if detalle.ProductoId.Img else ''
+                })
+            
+            return JsonResponse(datos_pedido)
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
 @require_POST
 @transaction.atomic
 def cambiar_estado_pedido(request, codigo_pedido):
     try:
+        # Get user role and ID from session
         role = request.session.get('role')
         user_id = request.session.get('user_id')
-        if not user_id or int(role) != 1:
-            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        try:
+            role_int = int(role)
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Permisos inválidos'}, status=403)
 
-        data = json.loads(request.body)
-        nuevo_estado = data.get('estado')
-        pedido = HistorialPedido.objects.get(CodigoPedido=codigo_pedido)
-        pedido.Estado = nuevo_estado
-        pedido.save()
+        # Check permissions (only admin)
+        if not user_id or role_int != 1:
+            return JsonResponse({'success': False, 'error': 'No tienes permisos para realizar esta acción'}, status=403)
 
-        return JsonResponse({'success': True, 'nuevo_estado': nuevo_estado})
+        # Parse JSON body
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Datos inválidos'}, status=400)
 
-    except HistorialPedido.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Pedido no encontrado'}, status=404)
+        nuevo_estado = (data.get('estado') or '').strip()
+        if not nuevo_estado or nuevo_estado not in ['Aprobado', 'Cancelado', 'Enviado']:
+            return JsonResponse({'success': False, 'error': 'Estado no válido'}, status=400)
+
+        # Update the state in the database
+        try:
+            pedido = HistorialPedido.objects.get(CodigoPedido=codigo_pedido)
+            pedido.Estado = nuevo_estado
+            pedido.save()
+        except HistorialPedido.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Pedido no encontrado'}, status=404)
+
+        return JsonResponse({
+            'success': True,
+            'nuevo_estado': nuevo_estado,
+            'message': f'Estado actualizado correctamente a {nuevo_estado}',
+            'redirect_url': reverse('solicitud')
+        })
+
+    except Exception as e:
+        logger.exception("Error al cambiar estado del pedido %s: %s", codigo_pedido, str(e))
+        return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'}, status=500)
+
+
 
 
 @require_POST
 def cancelar_pedido(request, codigo_pedido):
     """
-    Cancela todos los items asociados a un codigo_pedido que no estén ya cancelados.
-    Responde sólo a POST y redirige a la vista 'pedido' (nombre que tienes en urls.py).
+    Cancela el pedido que no esté ya cancelado.
+    Responde sólo a POST y redirige a la vista 'pedido'.
     """
-    pedidos = HistorialPedido.objects.filter(
-        codigo_pedido=codigo_pedido
-    ).exclude(estado__iexact='Cancelado')  # usar __iexact para evitar problemas de mayúsculas
+    try:
+        pedido = HistorialPedido.objects.get(CodigoPedido=codigo_pedido)
+        if pedido.Estado.lower() != 'cancelado':
+            pedido.Estado = 'Cancelado'
+            pedido.save()
+    except HistorialPedido.DoesNotExist:
+        pass
 
-    if not pedidos.exists():
-        # opcional: puedes usar messages para notificar al usuario
-        return redirect('pedido')
-
-    pedidos.update(estado='Cancelado')  # mantener el mismo texto usado en tu filtrado/plantilla
     return redirect('pedido')
 
 def solicitud(request):
     # Pedidos en espera (Solicitados)
-    pedidos_espera = HistorialPedido.objects.filter(estado='Solicitado').values('codigo_pedido').annotate(
-        total=Sum('precio_total'),
-        fecha=Max('fecha_compra'),
-    ).order_by('-fecha')
+    pedidos_espera = HistorialPedido.objects.filter(Estado='Solicitado').order_by('-Fecha')
 
     # Pedidos aprobados
-    pedidos_aprobados = HistorialPedido.objects.filter(estado='Aprobado').values('codigo_pedido').annotate(
-        total=Sum('precio_total'),
-        fecha=Max('fecha_compra'),
-    ).order_by('-fecha')
-
-    # Pedidos enviados
-    pedidos_enviados = HistorialPedido.objects.filter(estado='Enviado').values('codigo_pedido').annotate(
-        total=Sum('precio_total'),
-        fecha=Max('fecha_compra'),
-    ).order_by('-fecha')
-
-    # Pedidos entregados
-    pedidos_entregados = HistorialPedido.objects.filter(estado='Entregado').values('codigo_pedido').annotate(
-        total=Sum('precio_total'),
-        fecha=Max('fecha_compra'),
-    ).order_by('-fecha')
+    pedidos_aprobados = HistorialPedido.objects.filter(Estado='Aprobado').order_by('-Fecha')
 
     # Pedidos cancelados
-    pedidos_cancelados = HistorialPedido.objects.filter(estado='Cancelado').values('codigo_pedido').annotate(
-        total=Sum('precio_total'),
-        fecha=Max('fecha_compra'),
-    ).order_by('-fecha')
+    pedidos_cancelados = HistorialPedido.objects.filter(Estado='Cancelado').order_by('-Fecha')
 
     def procesar_pedidos(pedidos_query):
         pedidos = []
-        for pedido_data in pedidos_query:
-            items = HistorialPedido.objects.filter(codigo_pedido=pedido_data['codigo_pedido']).select_related('usuario', 'producto')
-            primer_item = items.first()
+        for pedido in pedidos_query:
+            detalles = HistorialPedidoDetalle.objects.filter(HistorialId=pedido).select_related('ProductoId')
             
             pedidos.append({
-                'codigo_pedido': pedido_data['codigo_pedido'],
-                'cliente': f"{primer_item.usuario.PrimerNombre} {primer_item.usuario.PrimerApellido}" if primer_item.usuario else "Invitado",
-                'items': items,
-                'total': pedido_data['total'],
-                'fecha': pedido_data['fecha'],
-                'estado': primer_item.estado,
+                'codigo_pedido': pedido.CodigoPedido,
+                'cliente': f"{pedido.UsuarioId.PrimerNombre} {pedido.UsuarioId.PrimerApellido}" if pedido.UsuarioId else "Invitado",
+                'items': detalles,
+                'total': pedido.Total,
+                'fecha': pedido.Fecha,
+                'estado': pedido.Estado,
             })
         return pedidos
 
     context = {
         'pedidos_espera': procesar_pedidos(pedidos_espera),
         'pedidos_aprobados': procesar_pedidos(pedidos_aprobados),
-        'pedidos_enviados': procesar_pedidos(pedidos_enviados),
-        'pedidos_entregados': procesar_pedidos(pedidos_entregados),
         'pedidos_cancelados': procesar_pedidos(pedidos_cancelados),
     }
 
     return render(request, 'solicitud.html', context)
+
+
+  
