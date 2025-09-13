@@ -132,21 +132,73 @@ class Notificacion(models.Model):
         return f"{self.titulo} ({'Leída' if self.leida else 'No leída'})"
     
 
-class carritocompras(models.Model):
-    codigo_pedido = models.CharField(max_length=100)
-    cantidad = models.PositiveIntegerField()
-    precio = models.DecimalField(max_digits=10, decimal_places=2)
-    producto = models.ForeignKey('producto', on_delete=models.CASCADE)
-    precio_total = models.DecimalField(max_digits=12, decimal_places=2)
-    estado = models.CharField(max_length=20, default='Pendiente')
-    fecha_compra = models.DateTimeField(null=True, blank=True)
-    usuario = models.ForeignKey('usuario', on_delete=models.SET_NULL, null=True, blank=True) 
+class CarritoCompras(models.Model):
+    Id = models.AutoField(primary_key=True)
+    CodigoPedido = models.CharField(max_length=50)
+    UsuarioId = models.ForeignKey(
+        usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        db_column='UsuarioId'
+    )
+    ProductoId = models.ForeignKey(
+        producto,
+        on_delete=models.CASCADE,
+        db_column='ProductoId'
+    )
+    Cantidad = models.PositiveIntegerField()
+    PrecioUnitario = models.DecimalField(max_digits=10, decimal_places=2)
+    FechaCompra = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'appsexshop_carritocompras'
+        db_table = 'carritocompras'
 
     def __str__(self):
-        return f"{self.codigo_pedido} - {self.producto.Nombre}"
+        return f"{self.Cantidad} x {self.ProductoId}"
+
+
+class HistorialPedido(models.Model):
+    Id = models.AutoField(primary_key=True)
+    CodigoPedido = models.CharField(max_length=50, unique=True)
+    UsuarioId = models.ForeignKey(
+        usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        db_column='UsuarioId'
+    )
+    Fecha = models.DateTimeField(auto_now_add=True)
+    Total = models.DecimalField(max_digits=10, decimal_places=2)
+    Estado = models.CharField(max_length=20, default='pendiente')
+
+    class Meta:
+        db_table = 'historial_pedidos'
+
+    def __str__(self):
+        return f"Pedido {self.CodigoPedido}"
+
+
+class HistorialPedidoDetalle(models.Model):
+    Id = models.AutoField(primary_key=True)
+    HistorialId = models.ForeignKey(
+        HistorialPedido,
+        on_delete=models.CASCADE,
+        related_name='detalles',
+        db_column='HistorialId'
+    )
+    ProductoId = models.ForeignKey(
+        producto,
+        on_delete=models.SET_NULL,
+        null=True,
+        db_column='ProductoId'
+    )
+    Cantidad = models.PositiveIntegerField()
+    PrecioUnitario = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        db_table = 'historial_pedidos_detalle'
+
+    def __str__(self):
+        return f"{self.Cantidad} x {self.ProductoId}"
     
     
 
