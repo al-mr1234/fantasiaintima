@@ -255,12 +255,12 @@
           <td>{{ pedido.cliente }}</td>
           <td>{{ pedido.fecha|date:"d/m/Y H:i" }}</td>
           <td>${{ pedido.total|floatformat:2 }}</td>
-          <td><span class="badge badge-estado badge-primary">Entregado</span></td>
+          <td><span class="badge badge-estado badge-success">Entregado</span></td>
           <td class="acciones-btn">
 
-            <button class="btn btn-sm btn-info" style="background-color: #dc3545;" data-toggle="modal" data-target="#pedidoModal" 
+            <button class="btn btn-sm btn-info" style="background-color: #c0b7b8;" data-toggle="modal" data-target="#pedidoModal" 
                     onclick="mostrarDetallesPedido('{{ pedido.codigo_pedido }}')">
-              <i class="fas fa-eye"></i>
+              <i class="fas fa-eye" style="color: black;"></i>
             </button>
 
           </td>
