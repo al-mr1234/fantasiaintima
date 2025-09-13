@@ -1251,7 +1251,7 @@ def cambiar_estado_pedido(request, codigo_pedido):
             return JsonResponse({'success': False, 'error': 'Datos inválidos'}, status=400)
 
         nuevo_estado = (data.get('estado') or '').strip()
-        if not nuevo_estado or nuevo_estado not in ['Aprobado', 'Cancelado', 'Enviado']:
+        if not nuevo_estado or nuevo_estado not in ['Aprobado', 'Cancelado', 'Enviado', 'Entregado']:
             return JsonResponse({'success': False, 'error': 'Estado no válido'}, status=400)
 
         # Update the state in the database
@@ -1272,7 +1272,6 @@ def cambiar_estado_pedido(request, codigo_pedido):
     except Exception as e:
         logger.exception("Error al cambiar estado del pedido %s: %s", codigo_pedido, str(e))
         return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'}, status=500)
-
 
 
 
@@ -1302,6 +1301,9 @@ def solicitud(request):
     # Pedidos cancelados
     pedidos_cancelados = HistorialPedido.objects.filter(Estado='Cancelado').order_by('-Fecha')
 
+    pedidos_enviados = HistorialPedido.objects.filter(Estado='Enviado').order_by('-Fecha')
+    pedidos_entregados = HistorialPedido.objects.filter(Estado='Entregado').order_by('-Fecha')
+
     def procesar_pedidos(pedidos_query):
         pedidos = []
         for pedido in pedidos_query:
@@ -1321,6 +1323,8 @@ def solicitud(request):
         'pedidos_espera': procesar_pedidos(pedidos_espera),
         'pedidos_aprobados': procesar_pedidos(pedidos_aprobados),
         'pedidos_cancelados': procesar_pedidos(pedidos_cancelados),
+        'pedidos_enviados': procesar_pedidos(pedidos_enviados),
+        'pedidos_entregados': procesar_pedidos(pedidos_entregados),
     }
 
     return render(request, 'solicitud.html', context)
