@@ -126,7 +126,11 @@
         <tbody>
             
         {% for pedido in pedidos %}
-<tr class="{% if pedido.estado|lower == 'cancelado' %}table-danger{% endif %}">
+<tr class="{% if pedido.estado|lower == 'cancelado' %}
+        table-danger
+    {% elif pedido.estado|lower == 'entregado' %}
+        table-success
+    {% endif %}">
     <td>{{ pedido.codigo_pedido }}</td>
     <td>{{ pedido.cliente }}</td>
     <td>{{ pedido.fecha|date:"Y-m-d" }}</td>
@@ -134,23 +138,26 @@
     <td>
         <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#pedidoModal"
                 onclick="mostrarDetallesPedido('{{ pedido.codigo_pedido }}')">
-            <i class="fas fa-eye"></i> Ver Detalles
+            <i class="fas fa-eye"> </i> 
         </button>
 
-        {% if pedido.estado|lower != 'cancelado' %}
+        {% if pedido.estado|lower == 'cancelado' %}
+            <span class="badge badge-danger">Cancelado</span>
+
+        {% elif pedido.estado|lower == 'entregado' %}
+            <span class="badge badge-success">Entregado</span>
+
+        {% else %}
             <form action="{% url 'cancelar_pedido' pedido.codigo_pedido %}" method="post" style="display:inline;" class="cancel-pedido-form">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-danger btn-sm">
+                <button type="submit" class="btn-cancel btn-danger btn-sm">
                     <i class="fas fa-times"></i> Cancelar
                 </button>
             </form>
-        {% else %}
-            <span class="badge badge-danger">Cancelado</span>
         {% endif %}
     </td>
 </tr>
 {% endfor %}
-
         
         </tbody>
 

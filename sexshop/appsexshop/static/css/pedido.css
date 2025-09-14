@@ -53,9 +53,14 @@
   }
 }
 
+.btn-ojo{
+     background-color:  #f3eff0;
+    color: black;
+}
+
   .btn{
-    background-color:  #f5365c;
-    color: white;
+    background-color:  #f3eff0;
+    color: black;
     }
 
   .btn:hover{
@@ -66,6 +71,19 @@
   .btn:active {
   background-color: #c44461; 
   color: white;
+}
+
+/* Quitar el borde azul de focus */
+.btn:focus, .btn:active {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Cambiar el efecto de focus a rosado */
+.btn-info:focus, .btn-info:active {
+    background-color: #f06292 !important; /* rosado */
+    border-color: #f06292 !important;
+    color: white !important;
 }
 
    /*nav y buscador*/
