@@ -1228,6 +1228,25 @@ def detalles_pedido(request, codigo_pedido):
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
+
+@require_POST
+def cancelar_pedido(request, codigo_pedido):
+    try:
+        pedido = HistorialPedido.objects.get(CodigoPedido=codigo_pedido)
+        if pedido.Estado.lower() != 'cancelado':
+            pedido.Estado = 'Cancelado'
+            pedido.save()
+            return JsonResponse({
+                'success': True,
+                'estado': pedido.Estado,
+                'codigo_pedido': pedido.CodigoPedido
+            })
+        else:
+            return JsonResponse({'success': False, 'error': 'El pedido ya estaba cancelado'})
+    except HistorialPedido.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Pedido no encontrado'}, status=404)
+
+
 @require_POST
 @transaction.atomic
 def cambiar_estado_pedido(request, codigo_pedido):
@@ -1272,24 +1291,6 @@ def cambiar_estado_pedido(request, codigo_pedido):
     except Exception as e:
         logger.exception("Error al cambiar estado del pedido %s: %s", codigo_pedido, str(e))
         return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'}, status=500)
-
-
-
-@require_POST
-def cancelar_pedido(request, codigo_pedido):
-    """
-    Cancela el pedido que no esté ya cancelado.
-    Responde sólo a POST y redirige a la vista 'pedido'.
-    """
-    try:
-        pedido = HistorialPedido.objects.get(CodigoPedido=codigo_pedido)
-        if pedido.Estado.lower() != 'cancelado':
-            pedido.Estado = 'Cancelado'
-            pedido.save()
-    except HistorialPedido.DoesNotExist:
-        pass
-
-    return redirect('pedido')
 
 def solicitud(request):
     # Pedidos en espera (Solicitados)
