@@ -200,6 +200,65 @@ class HistorialPedidoDetalle(models.Model):
     def __str__(self):
         return f"{self.Cantidad} x {self.ProductoId}"
     
+
+
+class Devolucion(models.Model):
+    id = models.AutoField(primary_key=True)
+    usuario = models.ForeignKey(
+        'usuario',  
+        on_delete=models.CASCADE,
+        db_column='UsuarioId'
+    )
+    pedido = models.ForeignKey(
+        'HistorialPedidos',  
+        on_delete=models.CASCADE,
+        db_column='PedidoId'
+    )
+    motivo = models.TextField()
+    cantidad_devolver = models.PositiveIntegerField()
+    descripcion = models.TextField(blank=True, null=True)
+    producto_abierto = models.BooleanField()
+    empaque_original = models.BooleanField()
+    evidencia = models.CharField(max_length=255, blank=True, null=True)
+    preferencia_resolucion = models.CharField(
+        max_length=10,
+        choices=[
+            ('Reemplazo', 'Reemplazo'),
+            ('Reembolso', 'Reembolso')
+        ]
+    )
+    direccion_envio = models.TextField(blank=True, null=True)
+    acepta_terminos = models.BooleanField()
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'devoluciones'
+
+    def __str__(self):
+        return f"Devolución #{self.id} - Pedido {self.pedido_id}"
+
+
+class DevolucionDetalle(models.Model):
+    id = models.AutoField(primary_key=True)
+    devolucion = models.ForeignKey(
+        Devolucion,
+        on_delete=models.CASCADE,
+        db_column='DevolucionId',
+        related_name='detalles'
+    )
+    producto = models.ForeignKey(
+        'producto',  
+        on_delete=models.CASCADE,
+        db_column='ProductoId'
+    )
+    cantidad = models.PositiveIntegerField()
+
+    class Meta:
+        db_table = 'devoluciones_detalle'
+
+    def __str__(self):
+        return f"Detalle de devolución {self.id} - Producto {self.producto_id}"
+
     
 
 
