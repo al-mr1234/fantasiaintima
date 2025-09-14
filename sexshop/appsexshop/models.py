@@ -206,8 +206,8 @@ from django.db import models
 
 class Devolucion(models.Model):
     Id = models.AutoField(primary_key=True) 
-    usuario = models.ForeignKey('usuario', on_delete=models.CASCADE, db_column='IdUsuario')
-    pedido = models.ForeignKey('HistorialPedidos', on_delete=models.CASCADE, db_column='Id')
+    usuario = models.ForeignKey('usuario', on_delete=models.CASCADE, db_column='UsuarioId')
+    pedido = models.ForeignKey('HistorialPedido', on_delete=models.CASCADE, db_column='HistorialPedidoId')
     motivo = models.TextField()
     cantidad_devolver = models.PositiveIntegerField()
     descripcion = models.TextField(blank=True, null=True)
@@ -229,7 +229,7 @@ class Devolucion(models.Model):
 class DevolucionDetalle(models.Model):
     Id = models.AutoField(primary_key=True)
     devolucion = models.ForeignKey(Devolucion, on_delete=models.CASCADE, db_column='DevolucionId', related_name='detalles')
-    producto = models.ForeignKey('producto', on_delete=models.CASCADE, db_column='IdProducto')
+    producto = models.ForeignKey('producto', on_delete=models.CASCADE, db_column='ProductoId    ')
     cantidad = models.PositiveIntegerField()
 
     class Meta:
