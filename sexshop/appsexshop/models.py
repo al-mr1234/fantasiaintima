@@ -221,6 +221,7 @@ class Devolucion(models.Model):
     direccion_envio = models.TextField(blank=True, null=True)
     acepta_terminos = models.BooleanField()
     fecha = models.DateTimeField(auto_now_add=True)
+    Estado = models.CharField(max_length=20, default='pendiente')
 
     class Meta:
         db_table = 'devoluciones'
