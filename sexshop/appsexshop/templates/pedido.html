@@ -453,8 +453,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             // ✅ Pintar fila de rojo permanentemente en el DOM
                             row.classList.add("table-danger");
                             // ✅ Opcional: desactivar botón
-                            form.querySelector("button").disabled = true;
-                            form.querySelector("button").textContent = "Cancelado";
+                            form.innerHTML = '<span class="badge badge-danger">Cancelado</span>';
 
                             Swal.fire("Cancelado", "El pedido ha sido cancelado.", "success");
                         } else {
