@@ -202,18 +202,12 @@ class HistorialPedidoDetalle(models.Model):
     
 
 
+from django.db import models
+
 class Devolucion(models.Model):
-    id = models.AutoField(primary_key=True)
-    usuario = models.ForeignKey(
-        'usuario',  
-        on_delete=models.CASCADE,
-        db_column='UsuarioId'
-    )
-    pedido = models.ForeignKey(
-        'HistorialPedidos',  
-        on_delete=models.CASCADE,
-        db_column='PedidoId'
-    )
+    Id = models.AutoField(primary_key=True) 
+    usuario = models.ForeignKey('usuario', on_delete=models.CASCADE, db_column='IdUsuario')
+    pedido = models.ForeignKey('HistorialPedidos', on_delete=models.CASCADE, db_column='Id')
     motivo = models.TextField()
     cantidad_devolver = models.PositiveIntegerField()
     descripcion = models.TextField(blank=True, null=True)
@@ -222,10 +216,7 @@ class Devolucion(models.Model):
     evidencia = models.CharField(max_length=255, blank=True, null=True)
     preferencia_resolucion = models.CharField(
         max_length=10,
-        choices=[
-            ('Reemplazo', 'Reemplazo'),
-            ('Reembolso', 'Reembolso')
-        ]
+        choices=[('Reemplazo', 'Reemplazo'), ('Reembolso', 'Reembolso')]
     )
     direccion_envio = models.TextField(blank=True, null=True)
     acepta_terminos = models.BooleanField()
@@ -234,30 +225,15 @@ class Devolucion(models.Model):
     class Meta:
         db_table = 'devoluciones'
 
-    def __str__(self):
-        return f"Devolución #{self.id} - Pedido {self.pedido_id}"
-
 
 class DevolucionDetalle(models.Model):
-    id = models.AutoField(primary_key=True)
-    devolucion = models.ForeignKey(
-        Devolucion,
-        on_delete=models.CASCADE,
-        db_column='DevolucionId',
-        related_name='detalles'
-    )
-    producto = models.ForeignKey(
-        'producto',  
-        on_delete=models.CASCADE,
-        db_column='ProductoId'
-    )
+    Id = models.AutoField(primary_key=True)
+    devolucion = models.ForeignKey(Devolucion, on_delete=models.CASCADE, db_column='DevolucionId', related_name='detalles')
+    producto = models.ForeignKey('producto', on_delete=models.CASCADE, db_column='IdProducto')
     cantidad = models.PositiveIntegerField()
 
     class Meta:
         db_table = 'devoluciones_detalle'
-
-    def __str__(self):
-        return f"Detalle de devolución {self.id} - Producto {self.producto_id}"
 
     
 
