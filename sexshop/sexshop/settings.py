@@ -10,7 +10,7 @@ SECRET_KEY = 'django-insecure-g=^shdgaccc+=*k9*^)mz@e)tzdq5^wnj7q3-in%7-)(pn+4c%
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["fantasiaintima2.onrender.com", "localhost", "127.0.0.1"]
 
 # Aplicaciones instaladas
 INSTALLED_APPS = [
