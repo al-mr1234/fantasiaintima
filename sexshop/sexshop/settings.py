@@ -72,14 +72,14 @@ WSGI_APPLICATION = 'sexshop.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'fantasiaintima2',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
+        'NAME': 'if0_39941853_fantasiaintima2',   # Nombre de tu DB
+        'USER': 'if0_39941853',                   # Usuario MySQL
+        'PASSWORD': 'tu_password_mysql',          # Contraseña (la que te generó InfinityFree)
+        'HOST': 'sql303.infinityfree.com',        # Hostname MySQL
         'PORT': '3306',
-        'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
     }
 }
+
 
 # Validación de contraseñas
 AUTH_PASSWORD_VALIDATORS = [
