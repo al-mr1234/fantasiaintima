@@ -55,13 +55,7 @@
             color: white;
         }
 
-        .step.active .step-icon {
-            background: #007bff;
-        }
-
-        .step.completed .step-icon {
-            background: #28a745;
-        }
+      
 
         .step-text {
             font-size: 14px;
@@ -69,21 +63,30 @@
             text-align: center;
         }
 
-        .step.active .step-text {
-            font-weight: bold;
-            color: #007bff;
-        }
-
-        .step.completed .step-text {
-            color: #28a745;
-        }
-        
+       
         /* Estilo para imágenes de productos */
         .producto-img {
             max-width: 80px;
             max-height: 80px;
             object-fit: contain;
         }
+
+         /* Paso activo (azul) */
+.step.active .step-icon { background: #007bff; }
+.step.active .step-text { color: #007bff; font-weight: bold; }
+
+/* Paso completado (verde) */
+.step.completed .step-icon { background: #28a745; }
+.step.completed .step-text { color: #28a745; font-weight: bold; }
+
+/* Paso en espera (amarillo) */
+.step-espera .step-icon { background: #ffc107 !important; }
+.step-espera .step-text { color: #ffc107 !important; font-weight: bold; }
+
+/* Paso cancelado (rojo) */
+.step-cancelado .step-icon { background: #dc3545 !important; }
+.step-cancelado .step-text { color: #dc3545 !important; font-weight: bold; }
+        
     </style>
 </head>
 <body>
@@ -174,23 +177,28 @@
                     <p class="mt-2">Cargando detalles del pedido...</p>
                 </div>
 
-                <!-- Contenido dinámico -->
+             
                 <div id="pedidoContent">
                     <!-- Stepper para el estado del pedido -->
                     <div class="stepper-container mb-4">
+                       
                         <div class="stepper">
+                            
                             <div class="step" id="step1">
                                 <div class="step-icon"><i class="fas fa-clipboard-check"></i></div>
                                 <div class="step-text">En proceso</div>
                             </div>
+
                             <div class="step" id="step2">
                                 <div class="step-icon"><i class="fas fa-truck"></i></div>
                                 <div class="step-text">Enviado</div>
                             </div>
+
                             <div class="step" id="step3">
                                 <div class="step-icon"><i class="fas fa-check-circle"></i></div>
                                 <div class="step-text">Entregado</div>
                             </div>
+
                         </div>
                     </div>
 
@@ -265,15 +273,13 @@ function getCookie(name) {
 }
 
 function mostrarDetallesPedido(codigoPedido) {
-    // Mostrar spinner y ocultar contenido
     $('#loadingSpinner').show();
     $('#pedidoContent').hide();
 
-    // Limpiar contenido anterior
     $('#pedidoId, #pedidoCliente, #pedidoFecha, #pedidoTotal').text('');
     $('#pedidoArticulos').empty();
 
-    // Resetear stepper
+    // Resetear el stepper
     $('.step').removeClass('active completed');
 
     fetch(`/pedidos/${codigoPedido}/`)
@@ -288,13 +294,34 @@ function mostrarDetallesPedido(codigoPedido) {
             $('#pedidoId').text(data.codigo_pedido || codigoPedido);
             $('#pedidoCliente').text(data.cliente || '');
             $('#pedidoFecha').text(data.fecha || '');
-            let total = parseFloat(data.total);
-            let totalFormatted = total ? new Intl.NumberFormat('es-CO', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 2
-            }).format(total) : '0,00';
+            $('#pedidoTotal').text(
+                new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(data.total || 0)
+            );
 
-$('#pedidoTotal').text(totalFormatted);
+            // === Pintar Stepper según estado ===
+            let estado = data.estado || 'Solicitado';
+            console.log("Estado del pedido:", estado);
+
+            if (estado === 'Solicitado' || estado === 'Aprobado') {
+                // Pedido recién creado o aprobado → Paso 1 azul
+                $('#step1').addClass('active');
+            }
+
+            if (estado === 'Enviado') {
+                // Pedido en camino → Paso 1 verde (completado), Paso 2 azul (activo)
+                $('#step1').addClass('completed');
+                $('#step2').addClass('active');
+            }
+
+            if (estado === 'Entregado') {
+                // Pedido completado → Paso 1 y 2 verdes, Paso 3 verde
+                $('#step1, #step2, #step3').addClass('completed');
+            }
 
             // Llenar artículos
             const articulosList = $('#pedidoArticulos');
@@ -304,23 +331,18 @@ $('#pedidoTotal').text(totalFormatted);
                         <tr>
                             <td>${art.nombre || ''}</td>
                             <td>${art.cantidad || ''}</td>
-                           <td>
-                          ${new Intl.NumberFormat('es-CO', {
-                              style: 'currency',
-                              currency: 'COP',
-                              minimumFractionDigits: 0,
-                              maximumFractionDigits: 2
-                          }).format(parseFloat(art.precio_unitario || 0))}
-                        </td>
-                           <td>
-                          ${new Intl.NumberFormat('es-CO', {
-                              style: 'currency',
-                              currency: 'COP',
-                              minimumFractionDigits: 0,
-                              maximumFractionDigits: 2
-                          }).format(parseFloat(art.total || 0))}
-                        </td>
-
+                            <td>${new Intl.NumberFormat('es-CO', {
+                                style: 'currency',
+                                currency: 'COP',
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }).format(art.precio_unitario || 0)}</td>
+                            <td>${new Intl.NumberFormat('es-CO', {
+                                style: 'currency',
+                                currency: 'COP',
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }).format(art.total || 0)}</td>
                             <td>${art.imagen ? `<img src="${art.imagen}" class="producto-img">` : ''}</td>
                         </tr>
                     `);
@@ -328,38 +350,17 @@ $('#pedidoTotal').text(totalFormatted);
             } else {
                 articulosList.append('<tr><td colspan="5" class="text-center">No hay artículos</td></tr>');
             }
-
-            // Stepper dinámico según estado
-            actualizarStepper(data.estado);
         })
         .catch(err => {
             console.error(err);
             $('#loadingSpinner').hide();
-            Swal.fire(
-                'Error',
-                'Error al cargar los detalles del pedido.',
-                'error'
-            );
+            Swal.fire('Error', 'Error al cargar los detalles del pedido.', 'error');
         });
 }
 
-// Stepper dinámico
-function actualizarStepper(estado) {
-    $('.step').removeClass('active completed');
-    if (estado === 'Solicitado' || estado === 'En proceso' || estado === 'Aprobado') {
-        // Azul solo en el primero
-        $('#step1').addClass('active');
-    } else if (estado === 'Enviado') {
-        // Verde el primero, azul el segundo
-        $('#step1').addClass('completed');
-        $('#step2').addClass('active');
-    } else if (estado === 'Entregado') {
-        // Verde los dos primeros, azul el último
-        $('#step1').addClass('completed');
-        $('#step2').addClass('completed');
-        $('#step3').addClass('active');
-    }
-}
+            
+    
+
 
 // Botón flotante
 document.addEventListener('DOMContentLoaded', function () {
@@ -416,6 +417,8 @@ document.addEventListener('DOMContentLoaded', function () {
         noResults.style.display = anyVisible ? 'none' : 'block';
     });
 });
+
+//estados del pedido
 
 
 </script>
