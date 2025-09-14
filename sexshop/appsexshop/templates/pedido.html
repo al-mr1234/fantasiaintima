@@ -71,21 +71,7 @@
             object-fit: contain;
         }
 
-         /* Paso activo (azul) */
-.step.active .step-icon { background: #007bff; }
-.step.active .step-text { color: #007bff; font-weight: bold; }
 
-/* Paso completado (verde) */
-.step.completed .step-icon { background: #28a745; }
-.step.completed .step-text { color: #28a745; font-weight: bold; }
-
-/* Paso en espera (amarillo) */
-.step-espera .step-icon { background: #ffc107 !important; }
-.step-espera .step-text { color: #ffc107 !important; font-weight: bold; }
-
-/* Paso cancelado (rojo) */
-.step-cancelado .step-icon { background: #dc3545 !important; }
-.step-cancelado .step-text { color: #dc3545 !important; font-weight: bold; }
         
     </style>
 </head>
@@ -113,7 +99,7 @@
 <div class="container">
     <h2 class="text-center my-4">Pedidos Realizados</h2>
 
-    <table class="table table-bordered table-hover">
+    <table class="table table-bordered ">
         <thead class="thead-dark">
             <tr>
                 <th>ID Pedido</th>
@@ -123,14 +109,21 @@
                 <th>Acciones</th>
             </tr>
         </thead>
+
         <tbody>
             
-        {% for pedido in pedidos %}
-<tr class="{% if pedido.estado|lower == 'cancelado' %}
+      {% for pedido in pedidos %}
+<tr class="
+    {% if pedido.estado|lower == 'cancelado' %}
         table-danger
     {% elif pedido.estado|lower == 'entregado' %}
         table-success
-    {% endif %}">
+    {% elif pedido.estado|lower == 'aprobado' %}
+      
+    {% elif pedido.estado|lower == 'enviado' %}
+        
+    {% endif %}
+">
     <td>{{ pedido.codigo_pedido }}</td>
     <td>{{ pedido.cliente }}</td>
     <td>{{ pedido.fecha|date:"Y-m-d" }}</td>
@@ -138,7 +131,7 @@
     <td>
         <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#pedidoModal"
                 onclick="mostrarDetallesPedido('{{ pedido.codigo_pedido }}')">
-            <i class="fas fa-eye"> </i> 
+            <i class="fas fa-eye"></i> 
         </button>
 
         {% if pedido.estado|lower == 'cancelado' %}
@@ -146,6 +139,12 @@
 
         {% elif pedido.estado|lower == 'entregado' %}
             <span class="badge badge-success">Entregado</span>
+
+        {% elif pedido.estado|lower == 'aprobado' %}
+            <span class="badge badge-primary">Aprobado</span>
+
+        {% elif pedido.estado|lower == 'enviado' %}
+            <span class="badge badge-warning">Enviado</span>
 
         {% else %}
             <form action="{% url 'cancelar_pedido' pedido.codigo_pedido %}" method="post" style="display:inline;" class="cancel-pedido-form">
@@ -193,7 +192,7 @@
                 <div id="pedidoContent">
                     <!-- Stepper para el estado del pedido -->
                     <div class="stepper-container mb-4">
-                       
+                   
                         <div class="stepper">
                             
                             <div class="step" id="step1">
@@ -284,14 +283,18 @@ function getCookie(name) {
     return cookieValue;
 }
 
+
+
 function mostrarDetallesPedido(codigoPedido) {
+    // Mostrar spinner y ocultar contenido
     $('#loadingSpinner').show();
     $('#pedidoContent').hide();
 
+    // Limpiar contenido anterior
     $('#pedidoId, #pedidoCliente, #pedidoFecha, #pedidoTotal').text('');
     $('#pedidoArticulos').empty();
 
-    // Resetear el stepper
+    // Resetear stepper
     $('.step').removeClass('active completed');
 
     fetch(`/pedidos/${codigoPedido}/`)
@@ -306,34 +309,13 @@ function mostrarDetallesPedido(codigoPedido) {
             $('#pedidoId').text(data.codigo_pedido || codigoPedido);
             $('#pedidoCliente').text(data.cliente || '');
             $('#pedidoFecha').text(data.fecha || '');
-            $('#pedidoTotal').text(
-                new Intl.NumberFormat('es-CO', {
-                    style: 'currency',
-                    currency: 'COP',
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                }).format(data.total || 0)
-            );
+            let total = parseFloat(data.total);
+            let totalFormatted = total ? new Intl.NumberFormat('es-CO', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            }).format(total) : '0,00';
 
-            // === Pintar Stepper según estado ===
-            let estado = data.estado || 'Solicitado';
-            console.log("Estado del pedido:", estado);
-
-            if (estado === 'Solicitado' || estado === 'Aprobado') {
-                // Pedido recién creado o aprobado → Paso 1 azul
-                $('#step1').addClass('active');
-            }
-
-            if (estado === 'Enviado') {
-                // Pedido en camino → Paso 1 verde (completado), Paso 2 azul (activo)
-                $('#step1').addClass('completed');
-                $('#step2').addClass('active');
-            }
-
-            if (estado === 'Entregado') {
-                // Pedido completado → Paso 1 y 2 verdes, Paso 3 verde
-                $('#step1, #step2, #step3').addClass('completed');
-            }
+$('#pedidoTotal').text(totalFormatted);
 
             // Llenar artículos
             const articulosList = $('#pedidoArticulos');
@@ -343,35 +325,34 @@ function mostrarDetallesPedido(codigoPedido) {
                         <tr>
                             <td>${art.nombre || ''}</td>
                             <td>${art.cantidad || ''}</td>
-                            <td>${new Intl.NumberFormat('es-CO', {
-                                style: 'currency',
-                                currency: 'COP',
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                            }).format(art.precio_unitario || 0)}</td>
-                            <td>${new Intl.NumberFormat('es-CO', {
-                                style: 'currency',
-                                currency: 'COP',
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                            }).format(art.total || 0)}</td>
-                            <td>${art.imagen ? `<img src="${art.imagen}" class="producto-img">` : ''}</td>
+                           <td>
+                          ${new Intl.NumberFormat('es-CO', {
+                              style: 'currency',
+                              currency: 'COP',
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2
+                          }).format(parseFloat(art.precio_unitario || 0))}
+                        </td>
+                           <td>
+                          ${new Intl.NumberFormat('es-CO', {
+                              style: 'currency',
+                              currency: 'COP',
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2
+                          }).format(parseFloat(art.total || 0))}
+                        </td>
+
+                           <td>${art.imagen ? `<img src="${art.imagen}" class="producto-img">` : ''}</td>
                         </tr>
                     `);
                 });
             } else {
                 articulosList.append('<tr><td colspan="5" class="text-center">No hay artículos</td></tr>');
             }
-        })
-        .catch(err => {
-            console.error(err);
-            $('#loadingSpinner').hide();
-            Swal.fire('Error', 'Error al cargar los detalles del pedido.', 'error');
+
+        
         });
 }
-
-            
-    
 
 
 // Botón flotante
