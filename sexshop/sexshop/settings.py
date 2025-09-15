@@ -74,12 +74,15 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'fantasiaintima2',
         'USER': 'root',
-        'PASSWORD': 'kvJibdWpHRZoKczMrkydrMcqqzdWiWH',
-        'HOST': 'mysql-xaqf.railway.internal',
-        'PORT': '3306',
-        'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+        'PASSWORD': 'kvJibdWPhRZoKczMrkydrMcqqzdWiWHH',
+        'HOST': 'gondola.proxy.rlwy.net',
+        'PORT': '32568',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+        }
     }
 }
+
 
 
 # Validación de contraseñas
