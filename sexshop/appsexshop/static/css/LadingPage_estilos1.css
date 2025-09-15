@@ -104,14 +104,16 @@ width: 50%;
 
     .dropdown-menu {
       font-size: 15px; /* Tamaño de texto más pequeño */
-      padding: 3px; /* Menor espaciado */
-      min-width: 145px;
+      padding: 10px; /* Menor espaciado */
+      min-width: 130px;
+      margin: 14%;
   }
 
   .dropdown-menu .dropdown-item {
       padding: 5px 5px; /* Reducir el padding de los elementos */
   }
 
+  
     /*icono usuario*/
     .Usuario{
       margin-left: -25px;
