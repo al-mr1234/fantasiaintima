@@ -12,10 +12,29 @@ from django.db.models import Avg
 from django.views.decorators.csrf import csrf_exempt
 from django.db import IntegrityError
 import re
+import json
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.urls import reverse
+from datetime import datetime, timedelta
+from datetime import datetime, timedelta
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+from django.contrib.auth.hashers import check_password
+from datetime import datetime, timedelta
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+from django.contrib.auth.hashers import check_password
+from .models import Notificacion
+from django.contrib.auth.decorators import login_required
+from paypal.standard.forms import PayPalPaymentsForm
+from django.db.models import Sum, Max, Q
+from django.conf import settings
+from decimal import Decimal
+from django.contrib.auth.models import User
 
+from django.db import transaction
 
 def LadingPage(request):
     categorias = categoria.objects.all().prefetch_related('subcategoria_set')
@@ -81,20 +100,22 @@ def listadocategorias(request):
     return render(request, "crud/categorias.html", {"page_obj": page_obj})
 
 def borrarcategoria(request, id_categoria):
+    page = request.GET.get('page', 1)
     try:
         borrar = connection.cursor()
         borrar.execute("CALL borrarcategoria(%s)", [id_categoria])
         messages.success(request, "Categoría eliminada correctamente.")
     except IntegrityError:
         messages.error(request, "No se puede eliminar la categoría porque tiene subcategorías asociadas.")
-    return redirect('listadocategorias')
+    return redirect(f'{reverse("listadocategorias")}?page={page}')    
 
 def actualizarcategoria(request, id_categoria):
+    page = request.GET.get('page', 1)
     if request.method == "POST":
         if request.POST.get('NombreCategoria'):
             actualizar = connection.cursor()
             actualizar.execute("CALL actualizarcategoria(%s, %s)", [id_categoria, request.POST.get('NombreCategoria')])
-            return redirect("listadocategorias")
+            return redirect(f'{reverse("listadocategorias")}?page={page}')
     else:
         categoria = connection.cursor()
         categoria.execute("CALL consultarcategoria(%s)", [id_categoria])
@@ -141,6 +162,7 @@ def insertarsubcategoria(request):
     return redirect('listadosubcategorias')  # <--- aquí
 
 def actualizarsubcategoria(request, id_subcategoria):
+    page = request.GET.get('page', 1)
     subcat = get_object_or_404(subcategoria, IdSubCategoria=id_subcategoria)
     if request.method == "POST":
         nombre = request.POST.get('nombre', '').strip()
@@ -148,68 +170,87 @@ def actualizarsubcategoria(request, id_subcategoria):
         error = validar_nombre_subcategoria(nombre)
         if error:
             messages.error(request, error)
-            return redirect('crudSubCategorias')
+            return redirect(f'{reverse("crudSubCategorias")}?page={page}')
         # Sin cambios
         if nombre == subcat.NombresubCategoria and int(categoria_id) == subcat.categoria_id:
             messages.info(request, "Sin cambios realizados")
-            return redirect('crudSubCategorias')
+            return redirect(f'{reverse("listadosubcategorias")}?page={page}')
         # Duplicado
         if subcategoria.objects.filter(NombresubCategoria__iexact=nombre, categoria_id=categoria_id).exclude(IdSubCategoria=id_subcategoria).exists():
             messages.error(request, "Subcategoría ya existe")
-            return redirect('crudSubCategorias')
+            return redirect(f'{reverse("crudSubCategorias")}?page={page}')
         subcat.NombresubCategoria = nombre
         subcat.categoria_id = categoria_id
         subcat.save()
         messages.success(request, "Subcategoría actualizada exitosamente")
-        return redirect('crudSubCategorias')
+        return redirect(f'{reverse("listadosubcategorias")}?page={page}')
     return redirect('crudSubCategorias')
 
 def borrarsubcategoria(request, id_subcategoria):
+    page = request.GET.get('page', 1)
     subcat = get_object_or_404(subcategoria, IdSubCategoria=id_subcategoria)
     # Bloquear si tiene productos relacionados
     if producto.objects.filter(IdSubCategoria=subcat).exists():
         messages.error(request, "Subcategoría en uso")
-        return redirect('crudSubCategorias')
+        return redirect(f'{reverse("listadosubcategorias")}?page={page}')
     subcat.delete()
     messages.success(request, "Subcategoría eliminada")
-    return redirect('crudSubCategorias')
+    return redirect(f'{reverse("listadosubcategorias")}?page={page}')
 #endregion
 
 
 # region login
 def validar_registro_usuario(data):
-    # Todos los campos obligatorios
-    campos = ['PrimerNombre', 'OtrosNombres', 'PrimerApellido', 'SegundoApellido', 'Correo', 'NombreUsuario', 'Contraseña']
-    for campo in campos:
-        if not data.get(campo) or not data.get(campo).strip():
-            if campo == 'NombreUsuario':
-                return "Nombre de usuario es obligatorio"
-            if campo == 'Contraseña':
-                return "Contraseña es obligatoria"
-            return "Todos los campos son obligatorios"
+    campos_obligatorios = [
+        'PrimerNombre',
+        'PrimerApellido',
+        'SegundoApellido',
+        'Correo',
+        'NombreUsuario',
+        'Contrasena',
+    ]
 
-    # Nombre de usuario largo/corto
-    nombre_usuario = data.get('NombreUsuario').strip()
-    if len(nombre_usuario) < 3:
-        return "El nombre de usuario debe tener al menos 3 caracteres"
-    if len(nombre_usuario) > 50:
-        return "Nombre excede el límite de caracteres"
+    # Verificar campos vacíos
+    for campo in campos_obligatorios:
+        valor = data.get(campo, '').strip()
+        if not valor:
+            return f"El campo '{campo}' es obligatorio y no puede estar vacío."
 
-    # Contraseña débil y con espacios
-    contraseña = data.get('Contraseña')
-    if len(contraseña) < 8:
-        return "La contraseña debe tener al menos 8 caracteres"
-    if ' ' in contraseña:
-        return "La contraseña no debe contener espacios"
+    # Validar formato de correo (opcional)
+    correo = data.get('Correo', '').strip()
+    if '@' not in correo or '.' not in correo:
+        return "El correo ingresado no es válido."
 
-    return None
+    # Verificar que el correo no exista ya (único)
+    if usuario.objects.filter(Correo=correo).exists():
+        return "Ya existe un usuario registrado con ese correo."
+    
+    # Validar contraseña
+    contrasena = data.get('Contrasena', '')
+    
+    if len(contrasena) > 8:
+        return "La contraseña debe tener como máximo 8 caracteres."
+
+    if ' ' in contrasena:
+        return "La contraseña no debe contener espacios."
+
+    if not re.search(r'[^A-Za-z0-9]', contrasena):
+        return "La contraseña debe contener al menos un carácter especial."
+
+    return None  # Todo está bien
+
+
+   
 
 def registro(request):
     if request.method == "POST":
-        error = validar_registro_usuario(request.POST)
+        data = request.POST
+        error = validar_registro_usuario(data)
         if error:
             messages.error(request, error)
-            return render(request, 'login/registro.html')
+            return render(request, 'login/registro.html', {
+                'valores': data  # Esto permite mantener los campos ya ingresados
+            })
 
         # Usuario duplicado (case sensitive permitido)
         nombre_usuario = request.POST.get('NombreUsuario').strip()
@@ -225,7 +266,7 @@ def registro(request):
             SegundoApellido=request.POST.get('SegundoApellido').strip(),
             Correo=request.POST.get('Correo').strip(),
             NombreUsuario=nombre_usuario,
-            Contraseña=make_password(request.POST.get('Contraseña')),
+            Contrasena=make_password(request.POST.get('Contrasena')),
             idRol=rol_default
         )
         nuevo_usuario.save()
@@ -235,46 +276,67 @@ def registro(request):
 
 
 def login(request):
-    # --- Bloqueo tras múltiples intentos fallidos ---
-    max_intentos = 5
+    max_intentos = 3
     intentos = request.session.get('login_intentos', 0)
     bloqueado = request.session.get('login_bloqueado', False)
+    bloqueado_hasta = request.session.get('bloqueado_hasta')
 
-    if bloqueado:
-        return render(request, 'login/login.html', {'error': 'Cuenta bloqueada temporalmente'})
+    # --- Validar si el bloqueo sigue vigente ---
+    if bloqueado and bloqueado_hasta:
+        desbloqueo = datetime.fromisoformat(bloqueado_hasta)
+        ahora = datetime.now()
+        if ahora < desbloqueo:
+            tiempo_restante = int((desbloqueo - ahora).total_seconds())
+            return render(request, 'login/login.html', {
+                'error': 'Cuenta bloqueada temporalmente. Intenta más tarde.',
+                'bloqueado': True,
+                'tiempo_restante': tiempo_restante
+            })
+        else:
+            # Se levanta el bloqueo al pasar el tiempo
+            request.session['login_bloqueado'] = False
+            request.session['bloqueado_hasta'] = None
+            request.session['login_intentos'] = 0
 
     if request.method == "POST":
         correo = request.POST.get('correo', '').strip()
-        contraseña = request.POST.get('contraseña', '').strip()
+        contrasena = request.POST.get('contrasena', '').strip()
 
         # --- Validación de campos vacíos ---
-        if not correo and not contraseña:
+        if not correo and not contrasena:
             return render(request, 'login/login.html', {'error': 'Campos obligatorios'})
         if not correo:
-            return render(request, 'login/login.html', {'error': 'Este campo es obligatorio'})
-        if not contraseña:
-            return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
+            return render(request, 'login/login.html', {'error': 'El correo es obligatorio'})
+        if not contrasena:
+            return render(request, 'login/login.html', {'error': 'La contraseña es obligatoria'})
 
         # --- Validación de formato de correo ---
         try:
             validate_email(correo)
         except ValidationError:
-            return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
+            return render(request, 'login/login.html', {'error': 'Credenciales inválidas'})
 
         # --- Usuario no registrado ---
         try:
             user = usuario.objects.get(Correo=correo)
         except usuario.DoesNotExist:
             return render(request, 'login/login.html', {'error': 'Usuario no encontrado'})
+        
+
 
         # --- Contraseña incorrecta ---
-        if not (user.Contraseña == contraseña or check_password(contraseña, user.Contraseña)):
+        if not (user.Contrasena == contrasena or check_password(contrasena, user.Contrasena)):
             intentos += 1
             request.session['login_intentos'] = intentos
             if intentos >= max_intentos:
                 request.session['login_bloqueado'] = True
-                return render(request, 'login/login.html', {'error': 'Cuenta bloqueada temporalmente'})
-            return render(request, 'login/login.html', {'error': 'credenciales invaliadas'})
+                request.session['bloqueado_hasta'] = (datetime.now() + timedelta(minutes=1)).isoformat()
+                return render(request, 'login/login.html', {
+                    'error': 'Cuenta bloqueada temporalmente por intentos fallidos',
+                    'bloqueado': True,
+                    'tiempo_restante': 60
+                })
+            return render(request, 'login/login.html', {'error': 'Credenciales inválidas'})
 
         # --- Login exitoso ---
         request.session['user_id'] = user.IdUsuario
@@ -283,16 +345,15 @@ def login(request):
         request.session['role'] = user.idRol.IdRol
         request.session['login_intentos'] = 0
         request.session['login_bloqueado'] = False
+        request.session['bloqueado_hasta'] = None
         return redirect('Ladingpage')
 
     return render(request, 'login/login.html')
 
 
-
 def logout(request):
     request.session.flush()
     return redirect('Ladingpage')  
-
 
 def solicitar_recuperacion(request):
     if request.method == 'POST':
@@ -432,7 +493,7 @@ def nueva_contrasena(request):
         
         try:
             user = usuario.objects.get(Correo=email)
-            user.Contraseña = make_password(password)  # Importante: hashear la nueva contraseña
+            user.Contrasena = make_password(password)  # Importante: hashear la nueva contraseña
             user.save()
             
             # Limpiar la sesión
@@ -447,30 +508,56 @@ def nueva_contrasena(request):
     return render(request, 'login/nuevaContraseña.html')
 
 
+from django.contrib import messages
+from django.contrib.auth.hashers import make_password
+
 def insertarusuario(request):
     if request.method == "POST":
-        if (request.POST.get('PrimerNombre') and request.POST.get('OtrosNombres') and
-            request.POST.get('PrimerApellido') and request.POST.get('SegundoApellido') and
-            request.POST.get('Correo') and request.POST.get('NombreUsuario') and
-            request.POST.get('Contraseña')):
+        # Validar que todos los campos requeridos estén presentes
+        campos = ['PrimerNombre', 'OtrosNombres', 'PrimerApellido', 'SegundoApellido', 'Correo', 'NombreUsuario', 'Contrasena']
+        if all(request.POST.get(campo) for campo in campos):
+            correo = request.POST.get('Correo')
+            nombre_usuario = request.POST.get('NombreUsuario')
 
-            rol_default = roles.objects.get(IdRol=3)  
-            nuevo_usuario = usuario(
-                PrimerNombre=request.POST.get('PrimerNombre'),
-                OtrosNombres=request.POST.get('OtrosNombres'),
-                PrimerApellido=request.POST.get('PrimerApellido'),
-                SegundoApellido=request.POST.get('SegundoApellido'),
-                Correo=request.POST.get('Correo'),
-                NombreUsuario=request.POST.get('NombreUsuario'),
-                Contraseña=make_password(request.POST.get('Contraseña')),
-                idRol=rol_default
-            )
-            nuevo_usuario.save()
-            return redirect('crudUsuarios')  # Redirige a la lista de usuarios
+            # Validar si el correo ya está registrado
+            if usuario.objects.filter(Correo=correo).exists():
+                messages.error(request, 'El correo ya está registrado en el sistema.')
+                return redirect('crudUsuarios')
+
+            # Validar si el nombre de usuario ya está registrado
+            if usuario.objects.filter(NombreUsuario=nombre_usuario).exists():
+                messages.error(request, 'El nombre de usuario ya está registrado en el sistema.')
+                return redirect('crudUsuarios')
+
+            try:
+                rol_default = roles.objects.get(IdRol=2)  # Rol por defecto: cliente
+                nuevo_usuario = usuario(
+                    PrimerNombre=request.POST.get('PrimerNombre'),
+                    OtrosNombres=request.POST.get('OtrosNombres'),
+                    PrimerApellido=request.POST.get('PrimerApellido'),
+                    SegundoApellido=request.POST.get('SegundoApellido'),
+                    Correo=correo,
+                    NombreUsuario=nombre_usuario,
+                    Contrasena=make_password(request.POST.get('Contrasena')),
+                    idRol=rol_default
+                )
+                nuevo_usuario.save()
+                messages.success(request, 'Usuario registrado exitosamente.')
+                return redirect('crudUsuarios')
+
+            except roles.DoesNotExist:
+                messages.error(request, 'El rol especificado no existe.')
+                return redirect('crudUsuarios')
+        else:
+            messages.error(request, 'Todos los campos son obligatorios.')
+            return redirect('crudUsuarios')
+
     return redirect('crudUsuarios')
 
 
+
 def editarusuario(request, id_usuario):
+    page = request.GET.get('page', 1)
     usuario_obj = usuario.objects.get(IdUsuario=id_usuario)
     if request.method == "POST":
         usuario_obj.PrimerNombre = request.POST.get('PrimerNombre')
@@ -479,17 +566,18 @@ def editarusuario(request, id_usuario):
         usuario_obj.SegundoApellido = request.POST.get('SegundoApellido')
         usuario_obj.Correo = request.POST.get('Correo')
         usuario_obj.NombreUsuario = request.POST.get('NombreUsuario')
-        if request.POST.get('Contraseña'):
-            usuario_obj.Contraseña = make_password(request.POST.get('Contraseña'))
+        if request.POST.get('Contrasena'):
+            usuario_obj.Contrasena = make_password(request.POST.get('Contrasena'))
         usuario_obj.save()
-        return redirect('crudUsuarios')
+        return redirect(f'{reverse("crudUsuarios")}?page={page}')
     return render(request, 'crud/editar_usuario.html', {'usuario': usuario_obj})
 
 
 def borrarusuario(request, id_usuario):
+    page = request.GET.get('page', 1)
     usuario_obj = usuario.objects.get(IdUsuario=id_usuario)
     usuario_obj.delete()
-    return redirect('crudUsuarios')
+    return redirect(f'{reverse("crudUsuarios")}?page={page}')
       
 #endregion
 
@@ -498,32 +586,45 @@ def borrarusuario(request, id_usuario):
 def insertardomiciliario(request):
     if request.method == "POST":
         try:
-            # Asignar automáticamente el rol de domiciliario
-            rol_domiciliario = roles.objects.get(IdRol=2)
+            rol_domiciliario = roles.objects.get(IdRol=3)
 
-            # Crear el domiciliario con los datos del formulario
+            tipo_doc = request.POST.get('TipoDocumento')
+            documento = request.POST.get('Documento')
+            correo = request.POST.get('Correo')
+
+            if domiciliario.objects.filter(Documento=documento).exists():
+                messages.error(request, 'El documento ya está registrado en el sistema.')
+                return redirect('crudDomiciliarios')
+
+            if domiciliario.objects.filter(Correo=correo).exists():
+                messages.error(request, 'El correo electrónico ya está registrado en el sistema.')
+                return redirect('crudDomiciliarios')
+
             nuevo_domiciliario = domiciliario(
-                TipoDocumento=request.POST.get('TipoDocumento'),
-                Documento=request.POST.get('Documento'),
+                TipoDocumento=tipo_doc,
+                Documento=documento,
                 NombreDomiciliario=request.POST.get('NombreDomiciliario'),
                 PrimerApellido=request.POST.get('PrimerApellido'),
                 SegundoApellido=request.POST.get('SegundoApellido'),
                 Celular=request.POST.get('Celular'),
-                Ciudad=request.POST.get('Ciudad'),  # Captura la ciudad
-                Correo=request.POST.get('Correo'),
-                Contraseña=make_password(request.POST.get('Contraseña')),
-                IdRol=rol_domiciliario  # Asignar el rol de domiciliario
+                Ciudad=request.POST.get('Ciudad'),
+                Correo=correo,
+                IdRol=rol_domiciliario
             )
 
             nuevo_domiciliario.save()
-
+            messages.success(request, 'Domiciliario registrado exitosamente.')
             return redirect('crudDomiciliarios')
+
         except roles.DoesNotExist:
-            return render(request, 'crud/insertar_domiciliario.html', {'error': 'El rol especificado no existe en el sistema.'})
-    
-    return render(request, 'crud/insertar_domiciliario.html')
+            messages.error(request, 'El rol especificado no existe en el sistema.')
+            return redirect('crudDomiciliarios')
+
+    return redirect('crudDomiciliarios')
+
 
 def editardomiciliario(request, id_domiciliario):
+    page = request.GET.get('page', 1)
     domiciliario_obj = get_object_or_404(domiciliario, IdDomiciliario=id_domiciliario)
     
     if request.method == "POST":
@@ -535,17 +636,17 @@ def editardomiciliario(request, id_domiciliario):
         domiciliario_obj.Celular = request.POST.get('Celular')
         domiciliario_obj.Ciudad = request.POST.get('Ciudad')
         domiciliario_obj.Correo = request.POST.get('Correo')
-        if request.POST.get('Contraseña'):
-            domiciliario_obj.Contraseña = make_password(request.POST.get('Contraseña'))
+    
         domiciliario_obj.save()
-        return redirect('crudDomiciliarios')
+        return redirect(f'{reverse("crudDomiciliarios")}?page={page}')
     
     return render(request, 'crud/editar_domiciliario.html', {'domiciliario': domiciliario_obj})
 
 def borrardomiciliario(request, id_domiciliario):
+    page = request.GET.get('page', 1)
     domiciliario_obj = domiciliario.objects.get(IdDomiciliario=id_domiciliario)
     domiciliario_obj.delete()
-    return redirect('crudDomiciliarios')
+    return redirect(f'{reverse("crudDomiciliarios")}?page={page}')
 #endregion
 
 
@@ -596,6 +697,7 @@ def insertarproducto(request):
     return render(request, 'crud/productos.html')
 
 def editarproducto(request, id_producto):
+    page = request.GET.get('page', 1)
     producto_obj = get_object_or_404(producto, IdProducto=id_producto)
     if request.method == "POST":
         nombre = request.POST.get('Nombre', '').strip()
@@ -610,17 +712,17 @@ def editarproducto(request, id_producto):
         error = validar_nombre_producto(nombre)
         if error:
             messages.error(request, error)
-            return redirect('crudProductos')
+            return redirect(f'{reverse("crudProductos")}?page={page}')
         if not id_subcategoria:
             messages.error(request, "La subcategoría es obligatoria.")
-            return redirect('crudProductos')
+            return redirect(f'{reverse("crudProductos")}?page={page}')
         # Duplicado: mismo nombre y subcategoría, excluyendo el actual
         if producto.objects.filter(
             Nombre__iexact=nombre,
             IdSubCategoria_id=id_subcategoria
         ).exclude(IdProducto=id_producto).exists():
             messages.error(request, "Ya existe un producto con ese nombre en la misma subcategoría.")
-            return redirect('crudProductos')
+            return redirect(f'{reverse("crudProductos")}?page={page}')
 
         # Actualizar producto
         producto_obj.Nombre = nombre
@@ -633,13 +735,14 @@ def editarproducto(request, id_producto):
             producto_obj.Img = img
         producto_obj.save()
         messages.success(request, "Producto modificado exitosamente")
-        return redirect('crudProductos')
+        return redirect(f'{reverse("crudProductos")}?page={page}')
     return render(request, 'crud/editar_producto.html', {'producto': producto_obj})
+
 def borrarproducto(request, id_producto):
+    page = request.GET.get('page', 1)
     producto_obj = get_object_or_404(producto, IdProducto=id_producto)
     producto_obj.delete()
-    return redirect('crudProductos') # importa producto con minúscula si así está definido
-#endregion
+    return redirect(f'{reverse("crudProductos")}?page={page}') 
 
 @csrf_exempt
 def guardar_calificacion(request):
@@ -675,16 +778,6 @@ def guardar_calificacion(request):
             print(f"Error interno: {str(e)}")
             return JsonResponse({'success': False, 'mensaje': str(e)})
 
-    return JsonResponse({'success': False, 'mensaje': 'Método no permitido'})
-
-def catalogo_view(request):
-    categorias = categoria.objects.prefetch_related('subcategoria_set').all()
-    productos = producto.objects.all()
-    return render(request, 'catalogo.html', {
-        'categorias': categorias,
-        'productos': productos,
-    })
-    
 
 # region perfiles
 def perfiles(request):
@@ -775,7 +868,7 @@ def crudProductos(request):
     })
 
 def crudDomiciliarios(request):
-    domiciliarios_list = domiciliario.objects.filter(IdRol=2).order_by('-IdDomiciliario')
+    domiciliarios_list = domiciliario.objects.filter(IdRol=3).order_by('-IdDomiciliario')
     page_number = request.GET.get('page', 1)
     paginator = Paginator(domiciliarios_list, 5)
     page_obj = paginator.get_page(page_number)
@@ -783,7 +876,7 @@ def crudDomiciliarios(request):
 
 
 def crudUsuarios(request):
-    usuarios_list = usuario.objects.filter(idRol=3).order_by('-IdUsuario')
+    usuarios_list = usuario.objects.filter(idRol=2).order_by('-IdUsuario')
     page_number = request.GET.get('page', 1)
     paginator = Paginator(usuarios_list, 5)
     page_obj = paginator.get_page(page_number)
@@ -794,7 +887,45 @@ def recuperarContraseña(request):
     return render(request, 'login/recuperarcontraseña.html')
 
 def pedido(request):
-    return render(request, 'pedido.html')
+    # 1. Verifica si el usuario está logueado
+    user_id = request.session.get('user_id')
+    role = request.session.get('role')  # 👈 recupera el rol desde la sesión
+    if not user_id:
+        return redirect('login')
+
+    # 2. Si es admin (rol 1), trae TODOS los pedidos
+    if role == 1:
+        codigos_pedidos = carritocompras.objects.values('codigo_pedido').annotate(
+            total=Sum('precio_total'),
+            fecha=Max('fecha_compra'),
+        ).order_by('-fecha')
+    else:
+        # Si es un usuario normal, solo sus pedidos
+        codigos_pedidos = carritocompras.objects.filter(
+            usuario_id=user_id
+        ).values('codigo_pedido').annotate(
+            total=Sum('precio_total'),
+            fecha=Max('fecha_compra'),
+        ).order_by('-fecha')
+
+    pedidos = []
+    for codigo in codigos_pedidos:
+        items = carritocompras.objects.filter(
+            codigo_pedido=codigo['codigo_pedido']
+        ).select_related('usuario', 'producto')
+
+        primer_item = items.first()
+        pedidos.append({
+            'codigo_pedido': codigo['codigo_pedido'],
+            'cliente': f"{primer_item.usuario.PrimerNombre} {primer_item.usuario.PrimerApellido}" if primer_item.usuario else "Invitado",
+            'items': items,
+            'total': "{:,.2f}".format(codigo['total']).replace(',', 'X').replace('.', ',').replace('X', '.'),
+            'fecha': codigo['fecha'],
+            'estado': primer_item.estado,
+        })
+
+    return render(request, 'pedido.html', {'pedidos': pedidos})
+
 
 def codigo(request):
     return render(request, 'login/codigo.html')
@@ -814,7 +945,7 @@ def lencerias(request):
     categoria_lenceria = categoria.objects.get(NombreCategoria='Lencería')
     
     # Filtrar productos que pertenecen a la categoría de lencería o a sus subcategorías
-    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_lenceria)
+    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_lenceria).order_by('-IdProducto')
     
     return render(request, 'carrito/lencerias.html', {'productos': productos})
 
@@ -823,16 +954,16 @@ def vibradores(request):
     categoria_vibrador = categoria.objects.get(NombreCategoria='vibradores')  # Cambiado a get
     
     # Filtrar productos que pertenecen a la categoría de vibradores o a sus subcategorías
-    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_vibrador)
+    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_vibrador).order_by('-IdProducto')
     
     return render(request, 'carrito/vibradores.html', {'productos': productos})
 
 def disfraces(request):
     # Obtener la categoría de disfraces
-    categoria_disfraces = categoria.objects.get(NombreCategoria='Lencería')  # Cambiado a 'Lencería'
+    categoria_disfraces = categoria.objects.get(NombreCategoria='disfraces')  # Cambiado a 'Lencería'
     
     # Filtrar productos que pertenecen a la categoría de lencería o a sus subcategorías
-    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_disfraces)
+    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_disfraces).order_by('-IdProducto')
     
     return render(request, 'carrito/disfraces.html', {'productos': productos})
 
@@ -841,10 +972,406 @@ def dildos(request):
     categoria_dildo = categoria.objects.get(NombreCategoria='Dildos')  # Cambiado a get
     
     # Filtrar productos que pertenecen a la categoría de dildos o a sus subcategorías
-    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_dildo)
+    productos = producto.objects.filter(IdSubCategoria__categoria=categoria_dildo).order_by('-IdProducto')
     
     return render(request, 'carrito/dildos.html', {'productos': productos})
 
 def productosCarrito(request):
-    productos = producto.objects.all().order_by('-IdProducto')  # Obtener todos los productos
-    return render(request, 'carrito/productos.html', {'productos': productos})
+    productos = producto.objects.all().order_by('-IdProducto') # Obtener todos los productos  
+    categorias = categoria.objects.prefetch_related('subcategoria_set').all()
+    return render(request, 'carrito/productos.html', {'productos': productos,'categorias': categorias, })
+
+from django.shortcuts import redirect, render
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+
+def lista_notificaciones(request):
+    notificaciones = Notificacion.objects.all().order_by('-fecha')
+
+    return render(request, 'notificaciones.html', {'notificaciones': notificaciones})
+
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def marcar_leida(request, id_notificacion):
+    if request.method == 'POST':
+        try:
+            notificacion = Notificacion.objects.get(id=id_notificacion)
+            notificacion.leida = True
+            notificacion.save()
+
+            # Contar notificaciones pendientes
+            pendientes = Notificacion.objects.filter(leida=False).count()
+
+            return JsonResponse({'success': True, 'pendientes': pendientes})
+        except Notificacion.DoesNotExist:
+            return JsonResponse({'success': False, 'mensaje': 'Notificación no encontrada'}, status=404)
+
+    return JsonResponse({'success': False, 'mensaje': 'Método no permitido'}, status=405)
+
+
+
+
+
+"""@csrf_exempt
+def actualizar_stock(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'mensaje': 'Método no permitido'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+
+        # Si llega una lista "carrito" procesamos en bloque (recomendado)
+        carrito = data.get('carrito')
+        if carrito:
+            nuevo_stocks = []
+            with transaction.atomic():
+                # 1) Validar stock de todos los ítems primero (lock para concurrencia)
+                productos_map = {}
+                for item in carrito:
+                    pid = item.get('id_producto') or item.get('IdProducto')
+                    cantidad = int(item.get('cantidad', 1))
+                    prod = producto.objects.select_for_update().get(IdProducto=pid)
+                    if prod.Cantidad < cantidad:
+                        return JsonResponse({'success': False, 'mensaje': f'Stock insuficiente de {prod.Nombre}', 'id_producto': pid}, status=400)
+                    productos_map[pid] = (prod, cantidad)
+
+                # 2) Si todo está ok, descontar
+                for pid, (prod, cantidad) in productos_map.items():
+                    prod.Cantidad -= cantidad
+                    prod.save()
+                    nuevo_stocks.append({'id_producto': pid, 'nuevo_stock': prod.Cantidad})
+
+                    if prod.Cantidad == 0:
+                        admin = usuario.objects.filter(idRol__IdRol=1).first()
+                        if admin:
+                            Notificacion.objects.create(
+                                administrador=admin,
+                                titulo="Producto agotado",
+                                mensaje=f"El producto '{prod.Nombre}' se ha agotado."
+                            )
+
+            return JsonResponse({'success': True, 'nuevo_stocks': nuevo_stocks})
+
+        # Si no hay "carrito", permitir compatibilidad con petición individual
+        id_producto = data.get('id_producto')
+        cantidad = int(data.get('cantidad', 1))
+        prod = producto.objects.get(IdProducto=id_producto)
+
+        if prod.Cantidad < cantidad:
+            return JsonResponse({'success': False, 'mensaje': 'Stock insuficiente'}, status=400)
+
+        prod.Cantidad -= cantidad
+        prod.save()
+
+        if prod.Cantidad == 0:
+            admin = usuario.objects.filter(idRol__IdRol=1).first()
+            if admin:
+                Notificacion.objects.create(
+                    administrador=admin,
+                    titulo="Producto agotado",
+                    mensaje=f"El producto '{prod.Nombre}' se ha agotado."
+                )
+
+        return JsonResponse({'success': True, 'nuevo_stock': prod.Cantidad})
+
+    except producto.DoesNotExist:
+        return JsonResponse({'success': False, 'mensaje': 'Producto no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'mensaje': str(e)}, status=500)"""
+
+@csrf_exempt
+def agregar_al_carrito(request, producto_id):
+    if request.method == "POST":
+        prod = producto.objects.get(pk=producto_id)
+
+        if prod.Cantidad > 0:
+            carrito = request.session.get("carrito", {})
+            carrito[str(producto_id)] = carrito.get(str(producto_id), 0) + 1
+            request.session["carrito"] = carrito
+
+            total_items = sum(carrito.values())
+
+            return JsonResponse({
+                "success": True,
+                "total_items": total_items,
+                "stock_restante": prod.Cantidad  # Ojo: aquí no lo restamos todavía
+            })
+
+        return JsonResponse({"success": False, "error": "Sin stock"})
+    
+
+#pasarela de pago
+# -----------------------------
+#   Vistas de PayPal
+# -----------------------------
+
+def pago_paypal(request):
+    # Datos básicos de la transacción
+    paypal_dict = {
+        "business": settings.PAYPAL_RECEIVER_EMAIL,
+        "amount": "20.00",
+        "item_name": "Compra de prueba",
+        "invoice": "INV-0001",
+        "currency_code": "USD",
+        "notify_url": request.build_absolute_uri(reverse('paypal-ipn')),
+        "return_url": request.build_absolute_uri(reverse('pago_exitoso')),
+        "cancel_return": request.build_absolute_uri(reverse('pago_cancelado')),
+    }
+
+    form = PayPalPaymentsForm(initial=paypal_dict)
+    return render(request, "pago.html", {"form": form})
+
+
+def pago_exitoso(request):
+    # Vaciar carrito de sesión si lo usas
+    if "carrito" in request.session:
+        del request.session["carrito"]
+
+    return redirect('pedido')  # o a donde quieras mandar después del pago
+
+def pago_cancelado(request):
+    return redirect('carrito')
+
+
+@csrf_exempt
+def pago_paypal_carrito(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            total = data.get('total')
+            carrito = data.get('carrito', [])
+            user_id = request.session.get('user_id')
+
+            if not carrito or not total:
+                return JsonResponse({'error': 'Carrito vacío o total no enviado'}, status=400)
+
+            codigo_pedido = f"INV-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+            usuario_obj = None
+            if user_id:
+                try:
+                    usuario_obj = usuario.objects.get(IdUsuario=user_id)
+                except usuario.DoesNotExist:
+                    pass
+
+            pedidos_creados = []
+            for item in carrito:
+                id_producto = item.get('IdProducto') or item.get('id') or item.get('idProducto')
+                cantidad = item.get('cantidad', 1)
+                if not id_producto:
+                    return JsonResponse({'error': 'Falta IdProducto en el carrito'}, status=400)
+                try:
+                    prod = producto.objects.get(IdProducto=id_producto)
+                except producto.DoesNotExist:
+                    return JsonResponse({'error': f'Producto con Id {id_producto} no existe'}, status=400)
+                precio_decimal = Decimal(str(prod.Precio))
+                
+                # Cambiamos el estado a "Solicitado" en lugar de "Pagado"
+                pedido = carritocompras.objects.create(
+                    codigo_pedido=codigo_pedido,
+                    cantidad=cantidad,
+                    precio=precio_decimal,
+                    producto=prod,
+                    precio_total=precio_decimal * cantidad,
+                    estado='Solicitado',  # Estado inicial
+                    fecha_compra=timezone.now(),
+                    usuario=usuario_obj
+                )
+                pedidos_creados.append(pedido)
+
+            paypal_dict = {
+                "business": settings.PAYPAL_RECEIVER_EMAIL,
+                "amount": f"{float(total):.2f}",
+                "item_name": "Compra en Fantasía Íntima",
+                "invoice": codigo_pedido,
+                "currency_code": "USD",
+                "notify_url": request.build_absolute_uri(reverse('paypal-ipn')),
+                "return_url": request.build_absolute_uri(reverse('pago_exitoso')),
+                "cancel_return": request.build_absolute_uri(reverse('pago_cancelado')),
+            }
+            form = PayPalPaymentsForm(initial=paypal_dict)
+            return JsonResponse({'form_html': form.render()})
+        except Exception as e:
+            return JsonResponse({'error': f'Error interno: {str(e)}'}, status=500)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@csrf_exempt
+def detalles_pedido(request, codigo_pedido):
+    if request.method == 'GET':
+        try:
+            # Obtener todos los items del pedido con este código
+            items_pedido = carritocompras.objects.filter(codigo_pedido=codigo_pedido).select_related('producto', 'usuario')
+            
+            if not items_pedido.exists():
+                return JsonResponse({'error': 'Pedido no encontrado'}, status=404)
+            
+            # Preparar los datos del pedido
+            primer_item = items_pedido.first()
+            datos_pedido = {
+                'codigo_pedido': codigo_pedido,
+                'cliente': f"{primer_item.usuario.PrimerNombre} {primer_item.usuario.PrimerApellido}" if primer_item.usuario else "Cliente no registrado",
+                'fecha': primer_item.fecha_compra.strftime('%Y-%m-%d'),
+                'total': float(sum(Decimal(item.precio_total) for item in items_pedido)),
+                'articulos': []
+            }
+            
+            # Agregar los artículos del pedido
+            for item in items_pedido:
+                datos_pedido['articulos'].append({
+                    'nombre': item.producto.Nombre,
+                    'cantidad': item.cantidad,
+                    'precio_unitario': float(item.precio),
+                    'total': float(item.precio_total),
+                    'imagen': item.producto.Img.url if item.producto.Img else ''
+                })
+            
+            return JsonResponse(datos_pedido)
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+from paypal.standard.models import ST_PP_COMPLETED
+from paypal.standard.ipn.signals import valid_ipn_received
+from django.dispatch import receiver
+
+@receiver(valid_ipn_received)
+def pago_paypal_exitoso(sender, **kwargs):
+    ipn_obj = sender
+    if ipn_obj.payment_status == ST_PP_COMPLETED:
+        codigo_pedido = ipn_obj.invoice
+
+        with transaction.atomic():
+            pedidos = carritocompras.objects.select_related("producto").filter(codigo_pedido=codigo_pedido)
+
+            for pedido in pedidos:
+                prod = pedido.producto
+                if prod.Cantidad >= pedido.cantidad:
+                    prod.Cantidad -= pedido.cantidad
+                    prod.save()
+
+            # Marcar como pagados
+            pedidos.update(
+                estado='Pagado',
+                fecha_compra=timezone.now()
+            )
+
+import logging
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.db import transaction
+from django.urls import reverse
+from .models import carritocompras
+
+logger = logging.getLogger(__name__)
+
+@require_POST
+@transaction.atomic
+def cambiar_estado_pedido(request, codigo_pedido):
+    try:
+        # Get user role and ID from session
+        role = request.session.get('role')
+        user_id = request.session.get('user_id')
+        try:
+            role_int = int(role)
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Permisos inválidos'}, status=403)
+
+        # Check permissions (only admin)
+        if not user_id or role_int != 1:
+            return JsonResponse({'success': False, 'error': 'No tienes permisos para realizar esta acción'}, status=403)
+
+        # Parse JSON body
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Datos inválidos'}, status=400)
+
+        nuevo_estado = (data.get('estado') or '').strip()
+        if not nuevo_estado or nuevo_estado not in ['Aprobado', 'Cancelado', 'Enviado']:
+            return JsonResponse({'success': False, 'error': 'Estado no válido'}, status=400)
+
+        # Update the state in the database
+        pedidos = carritocompras.objects.filter(codigo_pedido=codigo_pedido)
+        if not pedidos.exists():
+            return JsonResponse({'success': False, 'error': 'Pedido no encontrado'}, status=404)
+
+        pedidos.update(estado=nuevo_estado)
+
+        return JsonResponse({
+            'success': True,
+            'nuevo_estado': nuevo_estado,
+            'message': f'Estado actualizado correctamente a {nuevo_estado}',
+            'redirect_url': reverse('solicitud')
+        })
+
+    except Exception as e:
+        logger.exception("Error al cambiar estado del pedido %s: %s", codigo_pedido, str(e))
+        return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'}, status=500)
+
+
+
+
+@require_POST
+def cancelar_pedido(request, codigo_pedido):
+    """
+    Cancela todos los items asociados a un codigo_pedido que no estén ya cancelados.
+    Responde sólo a POST y redirige a la vista 'pedido' (nombre que tienes en urls.py).
+    """
+    pedidos = carritocompras.objects.filter(
+        codigo_pedido=codigo_pedido
+    ).exclude(estado__iexact='Cancelado')  # usar __iexact para evitar problemas de mayúsculas
+
+    if not pedidos.exists():
+        # opcional: puedes usar messages para notificar al usuario
+        return redirect('pedido')
+
+    pedidos.update(estado='Cancelado')  # mantener el mismo texto usado en tu filtrado/plantilla
+    return redirect('pedido')
+
+def solicitud(request):
+    # Pedidos en espera (Solicitados)
+    pedidos_espera = carritocompras.objects.filter(estado='Solicitado').values('codigo_pedido').annotate(
+        total=Sum('precio_total'),
+        fecha=Max('fecha_compra'),
+    ).order_by('-fecha')
+
+    # Pedidos aprobados
+    pedidos_aprobados = carritocompras.objects.filter(estado='Aprobado').values('codigo_pedido').annotate(
+        total=Sum('precio_total'),
+        fecha=Max('fecha_compra'),
+    ).order_by('-fecha')
+
+    # Pedidos cancelados
+    pedidos_cancelados = carritocompras.objects.filter(estado='Cancelado').values('codigo_pedido').annotate(
+        total=Sum('precio_total'),
+        fecha=Max('fecha_compra'),
+    ).order_by('-fecha')
+
+    def procesar_pedidos(pedidos_query):
+        pedidos = []
+        for pedido_data in pedidos_query:
+            items = carritocompras.objects.filter(codigo_pedido=pedido_data['codigo_pedido']).select_related('usuario', 'producto')
+            primer_item = items.first()
+            
+            pedidos.append({
+                'codigo_pedido': pedido_data['codigo_pedido'],
+                'cliente': f"{primer_item.usuario.PrimerNombre} {primer_item.usuario.PrimerApellido}" if primer_item.usuario else "Invitado",
+                'items': items,
+                'total': pedido_data['total'],
+                'fecha': pedido_data['fecha'],
+                'estado': primer_item.estado,
+            })
+        return pedidos
+
+    context = {
+        'pedidos_espera': procesar_pedidos(pedidos_espera),
+        'pedidos_aprobados': procesar_pedidos(pedidos_aprobados),
+        'pedidos_cancelados': procesar_pedidos(pedidos_cancelados),
+    }
+
+    return render(request, 'solicitud.html', context)

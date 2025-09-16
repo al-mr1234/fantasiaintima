@@ -1,7 +1,18 @@
 const carritoKey = 'carrito';
 
-const guardarCarrito = carrito => localStorage.setItem(carritoKey, JSON.stringify(carrito));
 const obtenerCarrito = () => JSON.parse(localStorage.getItem(carritoKey) || '[]');
+const guardarCarrito = carrito => localStorage.setItem(carritoKey, JSON.stringify(carrito));
+
+// Función para mostrar alertas bonitas con SweetAlert2
+function mostrarAlerta(mensaje, tipo = "success") {
+  Swal.fire({
+    icon: tipo,
+    title: mensaje,
+    showConfirmButton: false,
+    timer: 1500
+  });
+}
+
 
 const actualizarIconoCarrito = () => {
   const total = obtenerCarrito().reduce((acc, item) => acc + item.cantidad, 0);
@@ -9,130 +20,157 @@ const actualizarIconoCarrito = () => {
   if (icono) icono.textContent = total;
 
   document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    actualizarIconoCarrito();
-  }
+    if (document.visibilityState === 'visible') {
+      actualizarIconoCarrito();
+    }
   });
-  
 };
 
-const agregarAlCarrito = (idProducto, nombre, precio, cantidad, imagen) => {
-  console.log("agregarAlCarrito llamado con:", idProducto, nombre, precio, cantidad, imagen);
+// ❌ Eliminado: descontarStockServidor
+// ❌ Eliminado: getCookie (ya no es necesario)
+
+const agregarAlCarrito = (idProducto, nombre, precio, cantidad, imagen, descripcion) => {
+  console.log("agregarAlCarrito llamado con:", idProducto, nombre, precio, cantidad, imagen, descripcion);
+
   const carrito = obtenerCarrito();
-  const prod = carrito.find(p => p.idProducto === idProducto);
-  if (prod) prod.cantidad += cantidad;
-  else carrito.push({ idProducto, nombre, precio, cantidad, imagen, agregadoEn: Date.now() });
+  const prod = carrito.find(p => p.IdProducto === idProducto);
+
+  // Stock que muestras en el DOM (no en BD todavía)
+  const card = document.querySelector(`.card[data-id="${idProducto}"]`);
+  let stockDisponible = card ? parseInt(card.getAttribute('data-cantidad')) : 9999;
+
+  if (prod) {
+    if (prod.cantidad + cantidad > stockDisponible) {
+      prod.cantidad = stockDisponible;
+    } else {
+      prod.cantidad += cantidad;
+    }
+  } else {
+    carrito.push({ IdProducto: idProducto, nombre, precio, cantidad, imagen, descripcion, stock: stockDisponible });
+  }
+
   guardarCarrito(carrito);
   actualizarIconoCarrito();
+  mostrarAlerta("Producto agregado al carrito 💖", "success");
+
   console.log('Producto agregado:', carrito);
+};
 
-const alerta = document.getElementById('alerta-carrito');
-if (alerta) {
-  alerta.classList.remove('d-none');
-  alerta.classList.add('show');
-
-  setTimeout(() => {
-    alerta.classList.remove('show');
-    alerta.classList.add('d-none');
-  }, 1000);
-}
-
+const mostrarAlertaCarrito = () => {
+  const alerta = document.getElementById("alerta-carrito");
+  alerta.classList.remove("d-none");
+  setTimeout(() => alerta.classList.add("d-none"), 2000);
 };
 
 function getStarsHTML(rating) {
-    let starsHTML = '';
-    for (let i = 1; i <= 5; i++) {
-        starsHTML += `<span class="star ${i <= rating ? 'active' : ''}" data-value="${i}">&#9733;</span>`;
-    }
-    return starsHTML;
+  let starsHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    starsHTML += `<span class="star ${i <= rating ? 'active' : ''}" data-value="${i}">&#9733;</span>`;
+  }
+  return starsHTML;
 }
 
 function enviarCalificacion(id_producto, calificacion) {
-    fetch('/guardar-calificacion/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: `id_producto=${id_producto}&calificacion=${calificacion}`
-    })
-    .then(response => response.json())
-    .then(data => {
-        const msg = document.getElementById("mensaje-calificacion");
-        msg.textContent = data.mensaje;
-        msg.classList.remove("d-none");
-        setTimeout(() => msg.classList.add("d-none"), 2000);
+  fetch('/guardar-calificacion/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: `id_producto=${id_producto}&calificacion=${calificacion}`
+  })
+  .then(response => response.json())
+  .then(data => {
+    const msg = document.getElementById("mensaje-calificacion");
+    msg.textContent = data.mensaje;
+    msg.classList.remove("d-none");
+    setTimeout(() => msg.classList.add("d-none"), 2000);
 
-        if (data.success) {
-            const ratingText = document.querySelector('.rating-text');
-            if (ratingText) ratingText.textContent = `(${data.nuevo_promedio})`;
+    if (data.success) {
+      const ratingText = document.querySelector('.rating-text');
+      if (ratingText) ratingText.textContent = `(${data.nuevo_promedio})`;
 
-            const reviewSpan = document.getElementById(`review-count-${id_producto}`);
-            if (reviewSpan) reviewSpan.textContent = `(${data.total_reviews})`;
-        } else {
-            console.error('Error al guardar la calificación:', data.mensaje);
-        }
-    });
+      const reviewSpan = document.getElementById(`review-count-${id_producto}`);
+      if (reviewSpan) reviewSpan.textContent = `(${data.total_reviews})`;
+    } else {
+      console.error('Error al guardar la calificación:', data.mensaje);
+    }
+  });
 }
 
 function showProductDetails(card) {
-    const idProducto = card.getAttribute('data-id');
-    const nombre = card.getAttribute('data-nombre');
-    const precio = parseFloat(card.getAttribute('data-precio')).toLocaleString();
-    const imagen = card.getAttribute('data-imagen');
-    const descripcion = card.getAttribute('data-descripcion');
-    const cantidad = card.getAttribute('data-cantidad');
-    const rating = parseFloat(card.getAttribute('data-rating')) || 4;
+  const idProducto = card.getAttribute('data-id');
+  const nombre = card.getAttribute('data-nombre');
+  const precio = parseFloat(card.getAttribute('data-precio')).toLocaleString();
+  const imagen = card.getAttribute('data-imagen');
+  const descripcion = card.getAttribute('data-descripcion');
+  const cantidad = card.getAttribute('data-cantidad');
+  const rating = parseFloat(card.getAttribute('data-rating')) || 4;
 
-    const ratingStars = getStarsHTML(rating);
+  const ratingStars = getStarsHTML(rating);
 
-    document.getElementById("productDetails").innerHTML = `
-        <div class="image-container mb-3 text-center">
-            <img src="${imagen}" alt="${nombre}" class="img-fluid" style="max-height: 300px; object-fit: contain;">
-        </div>
-        <div class="product-details">
-            <h3 class="product-title">${nombre}</h3>
-            <div class="d-flex align-items-center mb-2">
-                <div class="stars">${ratingStars}</div>
-                <span class="ms-2 rating-text">(${rating.toFixed(1)})</span>
-            </div>
-            <h4 class="price">$${precio}</h4>
-            <p>${descripcion}</p>
-            <p class="text-success">Envío gratis a todo el país</p>
-            <div class="d-flex align-items-center mb-3">
-                <button class="btn btn-outline-secondary" id="decreaseQuantity">-</button>
-                <input type="number" id="productQuantity" value="1" min="1" class="mx-2" style="width: 60px; text-align: center;">
-                <button class="btn btn-outline-secondary" id="increaseQuantity">+</button>
-            </div>
-            <p>Cantidad disponible: <span id="stockQuantity">${cantidad}</span></p>
-        </div>
-    `;
+  document.getElementById("productDetails").innerHTML = `
+    <div class="image-container mb-3 text-center">
+      <img src="${imagen}" alt="${nombre}" class="img-fluid" style="max-height: 300px; object-fit: contain;">
+    </div>
+    <div class="product-details">
+      <h3 class="product-title">${nombre}</h3>
+      <div class="d-flex align-items-center mb-2">
+        <div class="stars">${ratingStars}</div>
+        <span class="ms-2 rating-text">(${rating.toFixed(1)})</span>
+      </div>
+      <h4 class="price">$${precio}</h4>
+      <p>${descripcion}</p>
+      <p class="text-success">Envío gratis a todo el país</p>
+      <div class="d-flex align-items-center mb-3">
+        <button class="btn btn-outline-secondary" id="decreaseQuantity">-</button>
+        <input type="number" id="productQuantity" value="1" min="1" class="mx-2" style="width: 60px; text-align: center;">
+        <button class="btn btn-outline-secondary" id="increaseQuantity">+</button>
+      </div>
+      <p>Cantidad disponible: <span id="stockQuantity">${cantidad}</span></p>
+    </div>
+  `;
 
-    const modal = document.getElementById('productModal');
-    modal.setAttribute('data-id-producto', idProducto);
-    modal.setAttribute('data-imagen-producto', imagen);  // Guardamos la imagen aquí también
+  const modal = document.getElementById('productModal');
+  modal.setAttribute('data-id-producto', idProducto);
+  modal.setAttribute('data-imagen-producto', imagen);
+  modal.setAttribute('data-descripcion-producto', descripcion); // ✅ Guardamos la descripción también
 
-    const increaseBtn = document.getElementById("increaseQuantity");
-    const decreaseBtn = document.getElementById("decreaseQuantity");
-    const quantityInput = document.getElementById("productQuantity");
+  const increaseBtn = document.getElementById("increaseQuantity");
+  const decreaseBtn = document.getElementById("decreaseQuantity");
+  const quantityInput = document.getElementById("productQuantity");
 
-    increaseBtn.addEventListener("click", () => {
-        quantityInput.value = parseInt(quantityInput.value) + 1;
+  increaseBtn.addEventListener("click", () => {
+    const maxStock = parseInt(document.getElementById("stockQuantity").textContent) || 1;
+    let current = parseInt(quantityInput.value);
+    if (current < maxStock) {
+      quantityInput.value = current + 1;
+    }
+  });
+
+  decreaseBtn.addEventListener("click", () => {
+    if (quantityInput.value > 1) {
+      quantityInput.value = parseInt(quantityInput.value) - 1;
+    }
+  });
+    // Validación para que la cantidad no supere el stock
+  quantityInput.addEventListener("input", () => {
+    const maxStock = parseInt(document.getElementById("stockQuantity").textContent) || 1;
+    if (parseInt(quantityInput.value) > maxStock) {
+      quantityInput.value = maxStock;
+    }
+    if (parseInt(quantityInput.value) < 1 || isNaN(quantityInput.value)) {
+      quantityInput.value = 1;
+    }
+  });
+
+  const stars = document.querySelectorAll('.stars .star');
+  stars.forEach(star => {
+    star.addEventListener('click', () => {
+      const selectedRating = star.getAttribute('data-value');
+      stars.forEach(s => s.classList.toggle('active', s.getAttribute('data-value') <= selectedRating));
+      enviarCalificacion(idProducto, selectedRating);
     });
-
-    decreaseBtn.addEventListener("click", () => {
-        if (quantityInput.value > 1) {
-            quantityInput.value = parseInt(quantityInput.value) - 1;
-        }
-    });
-
-    const stars = document.querySelectorAll('.stars .star');
-    stars.forEach(star => {
-        star.addEventListener('click', () => {
-            const selectedRating = star.getAttribute('data-value');
-            stars.forEach(s => s.classList.toggle('active', s.getAttribute('data-value') <= selectedRating));
-            enviarCalificacion(idProducto, selectedRating);
-        });
-    });
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -148,8 +186,10 @@ document.addEventListener('DOMContentLoaded', () => {
           card.getAttribute('data-nombre'),
           parseFloat(card.getAttribute('data-precio')),
           1,
-          card.getAttribute('data-imagen')  // Aquí pasamos la imagen
+          card.getAttribute('data-imagen'),
+          card.getAttribute('data-descripcion') // ✅ SE AGREGÓ ESTO
         );
+        mostrarAlertaCarrito();
         return;
       }
       showProductDetails(card);
@@ -158,32 +198,60 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Filtro de productos desde el menú
+  document.querySelectorAll('.dropdown-item').forEach(item => {
+    item.addEventListener('click', function(e) {
+      e.preventDefault();
+      const url = this.getAttribute('href');
+      fetch(url)
+        .then(response => response.text())
+        .then(html => {
+          document.getElementById('productList').innerHTML =
+            new DOMParser().parseFromString(html, 'text/html')
+            .getElementById('productList').innerHTML;
+        });
+    });
+  });
+
   const addToCartModalBtn = document.getElementById('add-to-cart-modal');
   addToCartModalBtn.onclick = () => {
-    console.log("Botón modal clickeado");
     const modal = document.getElementById('productModal');
     const cantidad = parseInt(document.getElementById('productQuantity').value);
     const nombre = document.querySelector('#productDetails .product-title').textContent;
-    const precio = parseFloat(document.querySelector('#productDetails .price').textContent.replace(/[^0-9.-]+/g,""));
+    const precio = Number(
+      document.querySelector('#productDetails .price').textContent.replace(/[^\d.-]+/g, "")
+    );
     const idProducto = modal.getAttribute('data-id-producto');
-    const imagen = modal.getAttribute('data-imagen-producto');  // Obtenemos imagen del atributo
+    const imagen = modal.getAttribute('data-imagen-producto');
+    const descripcion = modal.getAttribute('data-descripcion-producto'); 
 
     if (!idProducto) return console.error('No se encontró el id del producto en el modal');
-    agregarAlCarrito(idProducto, nombre, precio, cantidad, imagen);
+    agregarAlCarrito(idProducto, nombre, precio, cantidad, imagen, descripcion);
+    mostrarAlertaCarrito();
   };
 
+  // Buscador
   const searchInput = document.getElementById('query');
   searchInput.addEventListener('input', () => {
     const filtro = searchInput.value.toLowerCase().trim();
     const cards = document.querySelectorAll('#productList .card');
+    let encontrados = 0;
 
     cards.forEach(card => {
       const nombre = card.getAttribute('data-nombre').toLowerCase();
-      if (nombre.includes(filtro)) {
-        card.parentElement.style.display = '';
-      } else {
-        card.parentElement.style.display = 'none';
-      }
+      const visible = nombre.includes(filtro);
+      card.parentElement.style.display = visible ? '' : 'none';
+      if (visible) encontrados++;
     });
+
+    const mensaje = document.getElementById('noResultsMessage');
+    mensaje.classList.toggle('d-none', encontrados > 0);
   });
 });
+
+// Limpia el carrito si el usuario está en la página de éxito de PayPal
+if (window.location.pathname.includes("pago_exitoso")) {
+  localStorage.removeItem('carrito');
+  actualizarIconoCarrito(); // refresca el ícono
+  mostrarAlerta("¡Compra realizada con éxito! 💖", "success");
+}

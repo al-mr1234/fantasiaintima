@@ -25,7 +25,8 @@ from appsexshop.views import (
     login, registro, solicitar_recuperacion, pedido, verificar_codigo, 	nueva_contrasena,
     insertarsubcategoria, listadosubcategorias, borrarsubcategoria, actualizarsubcategoria,editarusuario,
     borrarusuario, insertarusuario, carrito, lencerias, productosCarrito, insertardomiciliario, editardomiciliario, borrardomiciliario,
-    insertarproducto, editarproducto, borrarproducto, vibradores, disfraces, dildos, logout, eliminar_foto_perfil, eliminar_cuenta, guardar_calificacion, devoluciones
+    insertarproducto, editarproducto, borrarproducto, vibradores, disfraces, dildos, logout, eliminar_foto_perfil, eliminar_cuenta, guardar_calificacion, devoluciones, agregar_al_carrito, lista_notificaciones, marcar_leida, pago_paypal_carrito,
+    pago_cancelado, pago_exitoso, detalles_pedido, cancelar_pedido, solicitud, cambiar_estado_pedido
 )
 
 urlpatterns = [
@@ -70,8 +71,25 @@ urlpatterns = [
     path('productos', productosCarrito, name='productosCarrito'),
     path('eliminar-cuenta/', eliminar_cuenta, name='eliminar_cuenta'),
     path('guardar-calificacion/', guardar_calificacion, name='guardar_calificacion'),
-   
+     #path('actualizar_stock/', actualizar_stock, name='actualizar_stock'),
+     path('agregar-al-carrito/<int:producto_id>/', agregar_al_carrito, name="agregar_al_carrito"),
+     path('notificaciones/', lista_notificaciones, name='lista_notificaciones'),
+     path('notificaciones/marcar_leida/<int:id_notificacion>/', marcar_leida, name='marcar_leida'),
+
+     path('pago-paypal-carrito/', pago_paypal_carrito, name='pago_paypal_carrito'),
+    path('paypal/', include('paypal.standard.ipn.urls')),
+    path('pago-exitoso/', pago_exitoso, name='pago_exitoso'),
+    path('pago-cancelado/', pago_cancelado, name='pago_cancelado'),
+    path('pedidos/<str:codigo_pedido>/', detalles_pedido, name='detalles_pedido'),
+    path('pedidos/cancelar/<str:codigo_pedido>/', cancelar_pedido, name='cancelar_pedido'),
+    path('solicitud/', solicitud, name='solicitud'),
+    path('cambiar-estado/<str:codigo_pedido>/', cambiar_estado_pedido, name='cambiar_estado_pedido'),
+
 ]
+
+
+   
+
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
