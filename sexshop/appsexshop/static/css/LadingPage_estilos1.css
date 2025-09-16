@@ -107,6 +107,11 @@ width: 50%;
       padding: 10px; /* Menor espaciado */
       min-width: 130px;
       margin: 14%;
+      
+  }
+  
+  #ingreso{
+    margin: 13%;
   }
 
   .dropdown-menu .dropdown-item {
