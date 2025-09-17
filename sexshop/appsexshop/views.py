@@ -894,54 +894,8 @@ def codigo(request):
 def nuevaContraseña(request):
     return render(request, 'login/nuevaContraseña.html')
 
-from .models import Devolucion, DevolucionDetalle, producto, usuario, HistorialPedido
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-
-@login_required
-def lista_devoluciones(request):
-    devoluciones = Devolucion.objects.filter(usuario=request.user.usuario)
-    return render(request, 'pedidos/devoluciones.html', {'devoluciones': devoluciones})
-
-@login_required
-def solicitar_devolucion(request):
-    if request.method == 'POST':
-        pedido_id = request.POST.get('pedido')
-        motivo = request.POST.get('motivo')
-        cantidad = request.POST.get('cantidad')
-        descripcion = request.POST.get('descripcion')
-        producto_abierto = bool(request.POST.get('producto_abierto'))
-        empaque_original = bool(request.POST.get('empaque_original'))
-        evidencia = request.POST.get('evidencia')
-        preferencia_resolucion = request.POST.get('preferencia_resolucion')
-        direccion_envio = request.POST.get('direccion_envio')
-        acepta_terminos = bool(request.POST.get('acepta_terminos'))
-        productos_ids = request.POST.getlist('productos')
-
-        devolucion = Devolucion.objects.create(
-            usuario=request.user.usuario,
-            pedido_id=pedido_id,
-            motivo=motivo,
-            cantidad_devolver=cantidad,
-            descripcion=descripcion,
-            producto_abierto=producto_abierto,
-            empaque_original=empaque_original,
-            evidencia=evidencia,
-            preferencia_resolucion=preferencia_resolucion,
-            direccion_envio=direccion_envio,
-            acepta_terminos=acepta_terminos
-        )
-        for prod_id in productos_ids:
-            DevolucionDetalle.objects.create(
-                devolucion=devolucion,
-                producto_id=prod_id,
-                cantidad=cantidad
-            )
-        return redirect('lista_devoluciones')
-    # Renderizar formulario si GET
-    pedidos = HistorialPedido.objects.filter(usuario=request.user.usuario)
-    productos = producto.objects.all()
-    return render(request, 'pedidos/solicitar_devolucion.html', {'pedidos': pedidos, 'productos': productos})
+def devoluciones(request):
+    return render(request, 'pedidos/devoluciones.html')
 
 
 def carrito(request):
