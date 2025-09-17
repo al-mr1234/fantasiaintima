@@ -239,4 +239,3 @@ class DevolucionDetalle(models.Model):
 
 
 
-   

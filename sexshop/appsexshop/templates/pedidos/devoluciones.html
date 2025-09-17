@@ -253,3 +253,18 @@
     <script src="{% static 'js/pedidos/devoluciones.js' %}"></script>
 </body>
 </html>
+{% for devolucion in devoluciones %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>Pedido: {{ devolucion.pedido.id }}</h5>
+            <p>Motivo: {{ devolucion.motivo }}</p>
+            <p>Cantidad: {{ devolucion.cantidad_devolver }}</p>
+            <p>Fecha: {{ devolucion.fecha }}</p>
+            <p>Resolución: {{ devolucion.preferencia_resolucion }}</p>
+        </div>
+    </div>
+{% empty %}
+    <div id="listaVacia" class="text-center py-5">
+        <p class="text-muted">No has hecho ninguna devolución</p>
+    </div>
+{% endfor %}
