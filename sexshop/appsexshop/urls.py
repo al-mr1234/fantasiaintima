@@ -25,9 +25,11 @@ from appsexshop.views import (
     login, registro, solicitar_recuperacion, pedido, verificar_codigo, 	nueva_contrasena,
     insertarsubcategoria, listadosubcategorias, borrarsubcategoria, actualizarsubcategoria,editarusuario,
     borrarusuario, insertarusuario, carrito, lencerias, productosCarrito, insertardomiciliario, editardomiciliario, borrardomiciliario,
-    insertarproducto, editarproducto, borrarproducto, vibradores, disfraces, dildos, logout, eliminar_foto_perfil, eliminar_cuenta, guardar_calificacion, devoluciones, actualizar_stock, agregar_al_carrito, lista_notificaciones, marcar_leida, pago_paypal_carrito,
+    insertarproducto, editarproducto, borrarproducto, vibradores, disfraces, dildos, logout, eliminar_foto_perfil, eliminar_cuenta, guardar_calificacion, lista_devoluciones, actualizar_stock, agregar_al_carrito, lista_notificaciones, marcar_leida, pago_paypal_carrito,
     pago_cancelado, pago_exitoso, detalles_pedido, cancelar_pedido, solicitud, cambiar_estado_pedido
 )
+from . import views
+from appsexshop.views import lista_devoluciones, solicitar_devolucion
 
 urlpatterns = [
     path('', LadingPage, name='Ladingpage'),
@@ -62,7 +64,7 @@ urlpatterns = [
     path('codigo', verificar_codigo, name='verificar_codigo'),
     path('nuevaContraseña',nueva_contrasena, name='nueva_contrasena'),
     path('pedido', pedido, name='pedido'),
-    path('devoluciones/', views.lista_devoluciones, name='lista_devoluciones'),
+    path('devoluciones/', lista_devoluciones, name='lista_devoluciones'),
     path('devoluciones/solicitar/', views.solicitar_devolucion, name='solicitar_devolucion'),
     path('carrito', carrito, name='carrito'),
     path('lencerias', lencerias, name='lencerias'),
