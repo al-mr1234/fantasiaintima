@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 import string
 from django.utils import timezone
 from django.contrib.auth.models import User
+import json
+from django.core.serializers.json import DjangoJSONEncoder
 
 class categoria(models.Model):
     IdCategoria = models.AutoField(primary_key=True)  
@@ -175,6 +177,14 @@ class HistorialPedido(models.Model):
 
     def __str__(self):
         return f"Pedido {self.CodigoPedido}"
+    
+    def productos_json(self):
+        detalles = self.detalles.select_related('ProductoId')  # usa el related_name 'detalles'
+        productos_list = [
+            {"id": detalle.ProductoId.id, "nombre": detalle.ProductoId.Nombre}
+            for detalle in detalles if detalle.ProductoId is not None
+        ]
+        return json.dumps(productos_list, cls=DjangoJSONEncoder)
 
 
 class HistorialPedidoDetalle(models.Model):
@@ -202,8 +212,6 @@ class HistorialPedidoDetalle(models.Model):
     
 
 
-from django.db import models
-
 class Devolucion(models.Model):
     Id = models.AutoField(primary_key=True) 
     usuario = models.ForeignKey('usuario', on_delete=models.CASCADE, db_column='UsuarioId')
@@ -221,7 +229,6 @@ class Devolucion(models.Model):
     direccion_envio = models.TextField(blank=True, null=True)
     acepta_terminos = models.BooleanField()
     fecha = models.DateTimeField(auto_now_add=True)
-    Estado = models.CharField(max_length=20, default='pendiente')
 
     class Meta:
         db_table = 'devoluciones'
