@@ -217,4 +217,62 @@ body{
   }
   
   
-   
+   /* ========================= */
+/* MEDIA QUERIES RESPONSIVE  */
+/* ========================= */
+
+/* Tablets en adelante */
+@media (max-width: 992px) {
+  .form-container {
+    max-width: 70%; 
+    margin: 5% auto;
+    padding: 20px;
+  }
+
+  .form {
+    display: grid;
+    grid-template-columns: 1fr; /* una sola columna */
+    gap: 15px;
+  }
+
+  .container1 input,
+  .container2 input,
+  .container3 input,
+  .container4 input {
+    width: 100% !important; /* que ocupen todo el ancho */
+    float: none; /* elimina flotados */
+  }
+
+  .form-btn,
+  .google-login-button {
+    width: 100%; /* botones ocupan todo */
+  }
+}
+
+/* Móviles */
+@media (max-width: 576px) {
+  .form-container {
+    width: 90%;
+    margin: 10% auto;
+    padding: 15px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  input {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .form-btn {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .google-login-button {
+    font-size: 12px;
+    padding: 10px;
+  }
+}
