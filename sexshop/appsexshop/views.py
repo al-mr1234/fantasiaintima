@@ -672,7 +672,6 @@ def insertarproducto(request):
         descripcion = request.POST.get('Descripcion', '').strip()
         precio = request.POST.get('Precio')
         cantidad = request.POST.get('Cantidad')
-        fecha_vence = request.POST.get('FechaVence')
         id_subcategoria = request.POST.get('IdSubCategoria')
         img = request.FILES.get('Img')
 
@@ -695,7 +694,6 @@ def insertarproducto(request):
             Descripcion=descripcion,
             Precio=precio,
             Cantidad=cantidad,
-            FechaVence=fecha_vence,
             IdSubCategoria=subcategoria.objects.get(IdSubCategoria=id_subcategoria),
             Img=img
         )
@@ -712,7 +710,6 @@ def editarproducto(request, id_producto):
         descripcion = request.POST.get('Descripcion', '').strip()
         precio = request.POST.get('Precio')
         cantidad = request.POST.get('Cantidad')
-        fecha_vence = request.POST.get('FechaVence')
         id_subcategoria = request.POST.get('IdSubCategoria')
         img = request.FILES.get('Img')
 
@@ -737,7 +734,6 @@ def editarproducto(request, id_producto):
         producto_obj.Descripcion = descripcion
         producto_obj.Precio = precio
         producto_obj.Cantidad = cantidad
-        producto_obj.FechaVence = fecha_vence
         producto_obj.IdSubCategoria = subcategoria.objects.get(IdSubCategoria=id_subcategoria)
         if img:
             producto_obj.Img = img

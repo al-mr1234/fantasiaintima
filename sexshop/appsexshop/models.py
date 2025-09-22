@@ -67,7 +67,6 @@ class producto(models.Model):
     Descripcion = models.CharField(max_length=255)
     Cantidad = models.IntegerField()
     Precio = models.FloatField()
-    FechaVence = models.DateField()
     IdSubCategoria = models.ForeignKey('subcategoria', on_delete=models.CASCADE, db_column='IdSubCategoria')
 
     class Meta:
