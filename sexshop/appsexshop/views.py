@@ -1343,7 +1343,7 @@ def solicitud(request):
 def productos_por_subcategoria(request, id_subcategoria):
     categorias = categoria.objects.all().prefetch_related('subcategoria_set')
     subcat = get_object_or_404(subcategoria, IdSubCategoria=id_subcategoria)
-    productos = producto.objects.filter(IdSubCategoria=subcat)
+    productos = producto.objects.filter(IdSubCategoria=subcat).order_by('-IdProducto')
 
     return render(request, "productos_subcategoria.html", {
         'categorias': categorias,
