@@ -33,8 +33,12 @@ from django.db.models import Sum, Max, Q
 from django.conf import settings
 from decimal import Decimal
 from django.contrib.auth.models import User
-from .models import HistorialPedido, HistorialPedidoDetalle
+from .models import HistorialPedido, HistorialPedidoDetalle, DevolucionDetalle, Devolucion
 from django.db import transaction
+from django.core.files.storage import FileSystemStorage
+from django.core.files.storage import default_storage
+from django.utils import timezone
+from django.http import HttpResponseBadRequest
 
 def LadingPage(request):
     categorias = categoria.objects.all().prefetch_related('subcategoria_set')
@@ -55,7 +59,6 @@ def LadingPage(request):
 
 
 #region categorias
-
 def validar_nombre_categoria(nombre):
     nombre = nombre.strip()
     if not nombre:
@@ -74,6 +77,11 @@ def insertarcategorias(request):
             valido, error = validar_nombre_categoria(nombre)
             if not valido:
                 messages.error(request, error)
+                return redirect("listadocategorias")
+            
+              # limite de 7 categorias
+            if categoria.objects.count() >= 7:
+                messages.error(request, "No se pueden registrar más de 7 categorías.")
                 return redirect("listadocategorias")
 
             # Comprobar duplicados usando Django ORM
@@ -1041,30 +1049,6 @@ def actualizar_stock(request):
     
 
 #region pedidos
-def pedido(request):
-    user_id = request.session.get('user_id')
-    role = request.session.get('role')
-    if not user_id:
-        return redirect('login')
-
-    if role == 1:
-        pedidos_qs = HistorialPedido.objects.all().order_by('-Fecha')
-    else:
-        pedidos_qs = HistorialPedido.objects.filter(UsuarioId=user_id).order_by('-Fecha')
-
-    pedidos = []
-    for p in pedidos_qs:
-        detalles = HistorialPedidoDetalle.objects.filter(HistorialId=p.Id).select_related('ProductoId')
-        pedidos.append({
-            'codigo_pedido': p.CodigoPedido,
-            'cliente': f"{p.UsuarioId.PrimerNombre} {p.UsuarioId.PrimerApellido}" if p.UsuarioId else "Invitado",
-            'items': detalles,
-            'total': "{:,.2f}".format(p.Total).replace(',', 'X').replace('.', ',').replace('X', '.'),
-            'fecha': p.Fecha,
-            'estado': p.Estado,
-        })
-    return render(request, 'pedido.html', {'pedidos': pedidos})
-
 @csrf_exempt
 def agregar_al_carrito(request, producto_id):
     if request.method == "POST":
@@ -1229,6 +1213,31 @@ def detalles_pedido(request, codigo_pedido):
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
+def pedido(request):
+    user_id = request.session.get('user_id')
+    role = request.session.get('role')
+    if not user_id:
+        return redirect('login')
+
+    if role == 1:
+        pedidos_qs = HistorialPedido.objects.all().order_by('-Fecha')
+    else:
+        pedidos_qs = HistorialPedido.objects.filter(UsuarioId=user_id).order_by('-Fecha')
+
+    pedidos = []
+    for p in pedidos_qs:
+        detalles = HistorialPedidoDetalle.objects.filter(HistorialId=p.Id).select_related('ProductoId')
+        pedidos.append({
+            'codigo_pedido': p.CodigoPedido,
+            'cliente': f"{p.UsuarioId.PrimerNombre} {p.UsuarioId.PrimerApellido}" if p.UsuarioId else "Invitado",
+            'items': detalles,
+            'total': "{:,.2f}".format(p.Total).replace(',', 'X').replace('.', ',').replace('X', '.'),
+            'fecha': p.Fecha,
+            'estado': p.Estado,
+        })
+    return render(request, 'pedido.html', {'pedidos': pedidos})
+
+
 @require_POST
 def cancelar_pedido(request, codigo_pedido):
     try:
@@ -1330,5 +1339,13 @@ def solicitud(request):
 
     return render(request, 'solicitud.html', context)
 
+#region productos filtrados por subcategoria
+def productos_por_subcategoria(request, id_subcategoria):
+    subcat = get_object_or_404(subcategoria, IdSubCategoria=id_subcategoria)
+    productos = producto.objects.filter(IdSubCategoria=subcat)
 
-  
+    return render(request, "productos_subcategoria.html", {
+        "subcategoria": subcat,
+        "productos": productos
+    })
+

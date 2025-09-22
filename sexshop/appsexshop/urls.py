@@ -26,7 +26,7 @@ from appsexshop.views import (
     insertarsubcategoria, listadosubcategorias, borrarsubcategoria, actualizarsubcategoria,editarusuario,
     borrarusuario, insertarusuario, carrito, lencerias, productosCarrito, insertardomiciliario, editardomiciliario, borrardomiciliario,
     insertarproducto, editarproducto, borrarproducto, vibradores, disfraces, dildos, logout, eliminar_foto_perfil, eliminar_cuenta, guardar_calificacion, devoluciones, actualizar_stock, agregar_al_carrito, lista_notificaciones, marcar_leida, pago_paypal_carrito,
-    pago_cancelado, pago_exitoso, detalles_pedido, cancelar_pedido, solicitud, cambiar_estado_pedido
+    pago_cancelado, pago_exitoso, detalles_pedido, cancelar_pedido, solicitud, cambiar_estado_pedido, productos_por_subcategoria
 )
 
 urlpatterns = [
@@ -84,6 +84,7 @@ urlpatterns = [
     path('pedidos/cancelar/<str:codigo_pedido>/', cancelar_pedido, name='cancelar_pedido'),
     path('solicitud/', solicitud, name='solicitud'),
     path('cambiar-estado/<str:codigo_pedido>/', cambiar_estado_pedido, name='cambiar_estado_pedido'),
+     path('productos/subcategoria/<int:id_subcategoria>/', productos_por_subcategoria, name='productos_por_subcategoria'),
 
 ]
 

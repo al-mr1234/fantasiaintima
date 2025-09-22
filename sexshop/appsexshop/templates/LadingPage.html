@@ -139,16 +139,21 @@
          {% for categoria in categorias %}
          <li class="nav-item">
            <p class="categoriasTitulo" href="#">{{ categoria.NombreCategoria }}</p>
-           <ul class="list-unstyled ms-3">
-             {% for subcategoria in categoria.subcategoria_set.all %}
-               <li><a class="dropdown-item" href="#">{{ subcategoria.NombresubCategoria }}</a></li>
-             {% empty %}
-               <li><a class="dropdown-item" href="#">No hay subcategorías</a></li>
-             {% endfor %}
-           </ul>
-         </li>
+
+
+                       <ul class="list-unstyled ms-3">
+            {% for subcategoria in categoria.subcategoria_set.all %}
+              <li>
+                <a class="dropdown-item" href="{% url 'productos_por_subcategoria' subcategoria.IdSubCategoria %}">
+                  {{ subcategoria.NombresubCategoria }}
+                </a>
+              </li>
+            {% empty %}
+              <li><a class="dropdown-item disabled">No hay subcategorías</a></li>
          {% endfor %}
-       </ul>
+      
+          </ul>
+             {% endfor %}
      </div>
    </div>
 
@@ -163,9 +168,10 @@
                {{ categoria.NombreCategoria }}
              </a>
              <!-- Menú desplegable -->
+
              <ul class="dropdown-menu dropdown-menu" id="custom-dropdown">
                {% for subcategoria in categoria.subcategoria_set.all %}
-                 <li><a class="dropdown-item" href="#">{{ subcategoria.NombresubCategoria }}</a></li>
+                 <li><a class="dropdown-item" href="{% url 'productos_por_subcategoria' subcategoria.IdSubCategoria %}"> {{ subcategoria.NombresubCategoria }}</a></li>
                {% empty %}
                  <li><a class="dropdown-item" href="#">No hay subcategorías</a></li>
                {% endfor %}
@@ -173,6 +179,7 @@
            </li>
            {% endfor %}
          </ul>
+         
        </div>
      </div>
    </nav>
@@ -305,6 +312,7 @@
               <input value="{{ i }}" name="rate{{ producto.IdProducto }}" id="star{{ producto.IdProducto }}{{ i }}" type="radio" {% if producto.rating|default:4 >= i %}checked{% endif %}>
             {% endfor %}
           </div>
+          
           <button class="btn add-to-cart-btn" style="background-color: #f5365c; color: white;" {% if producto.Cantidad == 0 %}disabled{% endif %}>
   <i class="fas fa-shopping-cart"></i> Añadir al carrito
 </button>
