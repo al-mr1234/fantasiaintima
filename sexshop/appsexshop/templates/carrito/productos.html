@@ -38,26 +38,13 @@
 
       <!-- Categorías con Dropdown -->
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-         <li class="nav-item"><a class="nav-link" style="color: #f5365c;" href={% url 'lencerias' %}>Colecciones</a></li>
+         <li class="nav-item"><a class="nav-link" style="color: #f5365c;" href={% url 'lencerias' %}>Colecciones Destacadas</a></li>
+ </ul>
 
-        {% for categoria in categorias %}
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown{{ categoria.id }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            {{ categoria.NombreCategoria }}
-          </a>
-          <ul class="dropdown-menu" aria-labelledby="navbarDropdown{{ categoria.id }}">
-            {% for subcategoria in categoria.subcategoria_set.all %}
-            <li><a class="dropdown-item" href="#">{{ subcategoria.NombresubCategoria }}</a></li>
-            {% empty %}
-            <li><a class="dropdown-item" href="#">No hay subcategorías</a></li>
-            {% endfor %}
-          </ul>
-        </li>
-        {% endfor %}
-      </ul>
+        
 
       <!-- Buscador, Carrito y Usuario -->
-      <div class="d-flex align-items-center">
+      <div class="d-flex align-items-center ms-auto">
 
         <div class="search-container me-3" style="margin: 0%;">
           <input id="query" type="search" class="form-control" placeholder="Buscar producto..." autocomplete="off">
@@ -82,9 +69,10 @@
          {% endif %}
          
        
-<a href="{% url 'carrito' %}" class="btn btn-outline-secondary me-2">
-          <i class="fas fa-shopping-cart"></i> <span id="cartCount">0</span>
-        </a>
+<a href="{% url 'carrito' %}" class="btn btn-outline-secondary me-2 d-flex align-items-center">
+  <i class="fas fa-shopping-cart me-1"></i>
+  <span id="cartCount">0</span>
+</a>
      
        <a href="{% url 'perfiles' %}" class="btn btn-outline-secondary" style="color: #f5365c;">
     <i class="fas fa-user"></i>
@@ -97,28 +85,11 @@
   </div>
 </nav>
 
-<!-- SEGUNDO NAVBAR PARA CATEGORÍAS -->
-<div class="collapse navbar-collapse" id="navbarCategories">
-  <ul class="navbar-nav mx-auto mb-0">
-    {% for cat in categorias %}
-    <li class="nav-item dropdown">
-      <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" id="categoriaDropdown{{ forloop.counter }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ cat.NombreCategoria }}
-      </a>
-      <ul class="dropdown-menu" aria-labelledby="categoriaDropdown{{ forloop.counter }}">
-        <li><a class="dropdown-item" href="{% url 'productosCarrito' %}?categoria_id={{ cat.IdCategoria }}">Todos en {{ cat.NombreCategoria }}</a></li>
-        {% for sub in cat.subcategorias %}
-        <li><a class="dropdown-item" href="{% url 'productosCarrito' %}?subcategoria_id={{ sub.IdSubCategoria }}">{{ sub.NombresubCategoria }}</a></li>
-        {% empty %}
-        <li><a class="dropdown-item disabled">No hay subcategorías</a></li>
-        {% endfor %}
-      </ul>
-    </li>
-    {% endfor %}
-  </ul>
-</div>
+
 
 <!-- LISTA DE PRODUCTOS -->
+    <h4 class="titulosLading" style="color:#f5365c; text-align:center;"><hr> ✰ Todos los Productos ✰<p style="font-size: 14px; color: #000000;">¡Todo el placer en un solo lugar!</p><hr></h4>
+
 <div class="container mt-5">
   <div class="row" id="productList">
     {% for producto in productos %}
