@@ -31,6 +31,27 @@
 
     <div class="collapse navbar-collapse" id="navbarNav">
 
+  <!-- Categorías con Dropdown -->
+    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+           {% for categoria in categorias %}
+           <li class="nav-item dropdown">
+             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+               {{ categoria.NombreCategoria }}
+             </a>
+             <!-- Menú desplegable -->
+
+             <ul class="dropdown-menu dropdown-menu" id="custom-dropdown">
+               {% for subcategoria in categoria.subcategoria_set.all %}
+                 <li><a class="dropdown-item" href="{% url 'productos_por_subcategoria' subcategoria.IdSubCategoria %}"> {{ subcategoria.NombresubCategoria }}</a></li>
+               {% empty %}
+                 <li><a class="dropdown-item" href="#">No hay subcategorías</a></li>
+               {% endfor %}
+             </ul>
+           </li>
+           {% endfor %}
+         </ul>
+
+
       <div class="d-flex align-items-center ms-auto">
         <div class="search-container me-3">
           <input id="query" type="search" class="form-control" placeholder="Buscar producto..." autocomplete="off">

@@ -1341,10 +1341,12 @@ def solicitud(request):
 
 #region productos filtrados por subcategoria
 def productos_por_subcategoria(request, id_subcategoria):
+    categorias = categoria.objects.all().prefetch_related('subcategoria_set')
     subcat = get_object_or_404(subcategoria, IdSubCategoria=id_subcategoria)
     productos = producto.objects.filter(IdSubCategoria=subcat)
 
     return render(request, "productos_subcategoria.html", {
+        'categorias': categorias,
         "subcategoria": subcat,
         "productos": productos
     })
