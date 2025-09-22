@@ -1,7 +1,19 @@
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# 👇 Cargar variables del archivo .env al entorno
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+
+def get_env_variable(var_name):
+    """Obtiene una variable de entorno o lanza error si no existe."""
+    try:
+        return os.environ[var_name]
+    except KeyError:
+        raise ImproperlyConfigured(f"La variable de entorno {var_name} no está configurada.")
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -131,9 +143,9 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
-# Reemplaza con tus claves reales de Google OAuth
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = ''
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = ''   
+# claves reales de Google OAuth
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = get_env_variable("GOOGLE_OAUTH_CLIENT_ID")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = get_env_variable("GOOGLE_OAUTH_CLIENT_SECRET")
 
 # Clave por defecto para modelos
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

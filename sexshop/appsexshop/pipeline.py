@@ -19,7 +19,7 @@ def create_user_in_custom_table(backend, user, response, *args, **kwargs):
             PrimerApellido=last_name,
             Correo=email,  # ← CORRECTO
             NombreUsuario=username,
-            Contraseña=make_password("google_login"),
+            Contrasena=make_password("google_login"),
             idRol=rol_default,
             imagen_perfil=picture
         )
