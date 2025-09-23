@@ -99,6 +99,7 @@
 <div class="container">
     <h2 class="text-center my-4">Pedidos Realizados</h2>
 
+       {% if pedidos %}
     <table class="table table-bordered ">
         <thead class="thead-dark">
             <tr>
@@ -162,6 +163,11 @@
 
       
     </table>
+    {% else %}
+<div class="alert alert-info text-center">
+    No has realizado ningún pedido.
+</div>
+{% endif %}
 
 
 
