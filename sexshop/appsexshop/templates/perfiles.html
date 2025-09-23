@@ -27,7 +27,8 @@
      <a style="color: #f5365c; cursor: pointer;" onclick="goBack()">
         <i class="fas fa-arrow-left"></i> 
       </a>
-  
+  <br>
+   <br>
     <div class="header">
       <!-- Sección del perfil -->
     <div class="profile-section">
@@ -81,6 +82,7 @@
 
     <!-- Contenedor del formulario -->
     <div class="form-container">
+
       <form id="profile-form" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="sector1">
@@ -110,10 +112,14 @@
         </div>
 
         <button type="button" id="edit-btn" class="botonPerfil" style="margin-top: 30px; border-radius: 10px;" onclick="enableEditing()">Editar Mi Perfil</button>
+
+            <button type="submit" id="save-btn" class="botonPerfil" style="margin-top: 30px; border-radius: 10px; display: none;">Guardar</button>
         
-        <button type="submit" id="save-btn" class="botonPerfil" style="margin-top: 30px; border-radius: 10px; display: none;">Guardar</button>
       </form>
     </div>
+
+
+
   </div>
 
 

@@ -76,10 +76,12 @@ class producto(models.Model):
 class Calificacion(models.Model):
     IdCalificacion = models.AutoField(primary_key=True)
     Calificacion = models.IntegerField()
-    IdProducto = models.ForeignKey('Producto', on_delete=models.CASCADE, db_column='IdProducto')
+    IdProducto = models.ForeignKey('producto', on_delete=models.CASCADE, db_column='IdProducto')
+    IdUsuario = models.ForeignKey('usuario', on_delete=models.CASCADE, db_column='IdUsuario', null=True, blank=True)  # 👈 permitir nulos temporalmente
 
     class Meta:
         db_table = 'calificacion'
+        unique_together = ('IdProducto','IdUsuario')
 
     def __str__(self):
         return f"{self.IdProducto.Nombre} - {self.Calificacion} estrellas"

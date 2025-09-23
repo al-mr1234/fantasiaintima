@@ -35,130 +35,44 @@
 </head>
 
 <body class="g-sidenav-show bg-gray-100">
-  <!-- Sidebar fijo para pantallas grandes -->
-  <aside class="sidenav bg-white navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-4 d-none d-xl-block"
-         id="sidenav-main">
+  <!-- Sidebar fijo -->
+  <aside class="sidenav bg-white navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-4 d-none d-xl-block" id="sidenav-main">
     <div class="sidenav-header sidebar-brand">
       <div class="navbar-brand m-0">
-        <span class="ms-1 font-weight-bold">Fantasia intima</span>
+        <span class="ms-1 font-weight-bold">Fantasia Intima</span>
       </div>
     </div>
     <hr class="horizontal dark mt-0">
     <div class="w-auto" id="sidenav-collapse-main">
       <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'Ladingpage'%}">
-            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="fa-solid fa-house text-danger text-sm opacity-10"></i>
-            </div>
-            <span class="nav-link-text ms-1">Home</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" href="{% url 'crudCategorias' %}">
-            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="fa-solid fa-pen-to-square text-danger text-sm opacity-10"></i>
-            </div>
-            <span class="nav-link-text ms-1">Categorias</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'listadosubcategorias' %}">
-            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="fa-solid fa-plus text-danger text-sm opacity-10"></i>
-            </div>
-            <span class="nav-link-text ms-1">Sub_Categorias</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'crudProductos' %}">
-            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="fa-solid fa-tag text-danger text-sm opacity-10"></i>
-            </div>
-            <span class="nav-link-text ms-1">Productos</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'crudDomiciliarios' %}">
-            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="fa-solid fa-motorcycle text-danger text-sm opacity-10"></i>
-            </div>
-            <span class="nav-link-text ms-1">Domiciliarios</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'crudUsuarios' %}">
-            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="fa-solid fa-user text-danger text-sm opacity-10"></i>
-            </div>
-            <span class="nav-link-text ms-1">Usuarios</span>
-          </a>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'Ladingpage'%}"><div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center"><i class="fa-solid fa-house text-danger text-sm opacity-10"></i></div><span class="nav-link-text ms-1">Home</span></a></li>
+        <li class="nav-item"><a class="nav-link active" href="{% url 'listadocategorias' %}"><div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center"><i class="fa-solid fa-pen-to-square text-danger text-sm opacity-10"></i></div><span class="nav-link-text ms-1">Categorias</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'listadosubcategorias' %}"><div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center"><i class="fa-solid fa-plus text-danger text-sm opacity-10"></i></div><span class="nav-link-text ms-1">Sub-Categorias</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'crudProductos' %}"><div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center"><i class="fa-solid fa-tag text-danger text-sm opacity-10"></i></div><span class="nav-link-text ms-1">Productos</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'crudDomiciliarios' %}"><div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center"><i class="fa-solid fa-motorcycle text-danger text-sm opacity-10"></i></div><span class="nav-link-text ms-1">Domiciliarios</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'crudUsuarios' %}"><div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center"><i class="fa-solid fa-user text-danger text-sm opacity-10"></i></div><span class="nav-link-text ms-1">Usuarios</span></a></li>
       </ul>
     </div>
   </aside>
 
-  <!-- Sidebar Offcanvas SOLO en pantallas pequeñas -->
-  <div class="offcanvas offcanvas-start bg-white border-0 border-radius-xl my-3 d-xl-none"
-       tabindex="-1" id="offcanvasSidebar" aria-labelledby="offcanvasSidebarLabel">
+  <!-- Sidebar Offcanvas para móviles -->
+  <div class="offcanvas offcanvas-start bg-white border-0 border-radius-xl my-3 d-xl-none" tabindex="-1" id="offcanvasSidebar" aria-labelledby="offcanvasSidebarLabel">
     <div class="sidenav-header">
-      <h5 class="offcanvas-title ms-3" id="offcanvasSidebarLabel">Fantasia intima</h5>
+      <h5 class="offcanvas-title ms-3" id="offcanvasSidebarLabel">Fantasia Intima</h5>
       <button type="button" class="btn-close text-reset me-2 mt-2" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <hr class="horizontal dark mt-0">
     <div class="offcanvas-body w-auto">
       <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'Ladingpage'%}">
-            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="fa-solid fa-house text-danger text-sm opacity-10"></i>
-            </div>
-            <span class="nav-link-text ms-1">Home</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" href="{% url 'crudCategorias' %}">
-            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="fa-solid fa-pen-to-square text-danger text-sm opacity-10"></i>
-            </div>
-            <span class="nav-link-text ms-1">Categorias</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'listadosubcategorias' %}">
-            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="fa-solid fa-plus text-danger text-sm opacity-10"></i>
-            </div>
-            <span class="nav-link-text ms-1">Sub_Categorias</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'crudProductos' %}">
-            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="fa-solid fa-tag text-danger text-sm opacity-10"></i>
-            </div>
-            <span class="nav-link-text ms-1">Productos</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'crudDomiciliarios' %}">
-            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="fa-solid fa-motorcycle text-danger text-sm opacity-10"></i>
-            </div>
-            <span class="nav-link-text ms-1">Domiciliarios</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'crudUsuarios' %}">
-            <div class="icon icon-shape icon-sm border-radius-md text-center me-2 d-flex align-items-center justify-content-center">
-              <i class="fa-solid fa-user text-danger text-sm opacity-10"></i>
-            </div>
-            <span class="nav-link-text ms-1">Usuarios</span>
-          </a>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'Ladingpage'%}"><i class="fa-solid fa-house text-danger me-2"></i>Home</a></li>
+        <li class="nav-item"><a class="nav-link active" href="{% url 'listadocategorias' %}"><i class="fa-solid fa-pen-to-square text-danger me-2"></i>Categorias</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'listadosubcategorias' %}"><i class="fa-solid fa-plus text-danger me-2"></i>Sub-Categorias</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'crudProductos' %}"><i class="fa-solid fa-tag text-danger me-2"></i>Productos</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'crudDomiciliarios' %}"><i class="fa-solid fa-motorcycle text-danger me-2"></i>Domiciliarios</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'crudUsuarios' %}"><i class="fa-solid fa-user text-danger me-2"></i>Usuarios</a></li>
       </ul>
     </div>
-  </div>
+  </div> 
 
   <!-- Main content -->
   <main class="main-content position-relative border-radius-lg ">
