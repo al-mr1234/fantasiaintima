@@ -422,10 +422,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 text: "Una vez cancelado no se podrá revertir.",
                 icon: "warning",
                 showCancelButton: true,
-                confirmButtonColor: "#d33",
-                cancelButtonColor: "#3085d6",
-                confirmButtonText: "Sí, cancelar",
-                cancelButtonText: "No"
+                confirmButtonColor: '#f5365c',
+                cancelButtonColor: 'black',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
                     fetch(form.action, {

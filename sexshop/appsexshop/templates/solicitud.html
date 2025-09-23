@@ -49,6 +49,9 @@
 
 <body>
   <div class="container py-4">
+
+
+
     <h2 class="mb-4"><center> Gestión de Pedidos </center></h2>
 
     <!-- Flecha de regreso -->
@@ -375,6 +378,8 @@
     </div>
   </div>
 
+  
+
   <!-- scripts -->
   <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
@@ -481,6 +486,8 @@ function cambiarEstadoPedido(button, codigo, estado) {
         text: `¿Estás seguro de que deseas ${action} este pedido?`,
         icon: 'question',
         showCancelButton: true,
+        confirmButtonColor: '#f5365c',
+        cancelButtonColor: 'black',
         confirmButtonText: `Sí, ${action}`,
         cancelButtonText: 'Cancelar'
     }).then((result) => {
