@@ -314,17 +314,28 @@
   <script>
     // Filtrado de Domiciliarios
     function filterDomiciliarios() {
-      const input = document.getElementById('searchInput');
-      const filter = input.value.toLowerCase();
-      const table = document.getElementById('domiciliariosTable');
-      const tr = table.getElementsByTagName('tr');
-      for (let i = 1; i < tr.length; i++) {
-        const tds = tr[i].getElementsByTagName('td');
-        let rowText = "";
-        for (let j = 0; j < tds.length; j++) rowText += (tds[j].textContent || tds[j].innerText) + " ";
-        tr[i].style.display = rowText.toLowerCase().indexOf(filter) > -1 ? "" : "none";
-      }
+  const input = document.getElementById('searchInput');
+  // Normalizamos: quitamos espacios sobrantes y pasamos a minúsculas
+  const filter = input.value.trim().replace(/\s+/g, " ").toLowerCase();
+
+  const table = document.getElementById('domiciliariosTable');
+  const tr = table.getElementsByTagName('tr');
+
+  for (let i = 1; i < tr.length; i++) {
+    const tds = tr[i].getElementsByTagName('td');
+    let rowText = "";
+
+    for (let j = 0; j < tds.length; j++) {
+      rowText += (tds[j].textContent || tds[j].innerText) + " ";
     }
+
+    // Normalizamos también el texto de cada fila
+    const cleanRowText = rowText.trim().replace(/\s+/g, " ").toLowerCase();
+
+    tr[i].style.display = cleanRowText.includes(filter) ? "" : "none";
+  }
+}
+
 
     // Offcanvas toggle
     document.addEventListener('DOMContentLoaded', function() {

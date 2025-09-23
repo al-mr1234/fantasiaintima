@@ -313,18 +313,27 @@
     }
 
     function filterCategories() {
-      const input = document.getElementById('searchInput');
-      const filter = input.value.toLowerCase();
-      const table = document.getElementById('categoriesTable');
-      const tr = table.getElementsByTagName('tr');
-      for (let i = 1; i < tr.length; i++) {
-        const td = tr[i].getElementsByTagName('td')[1];
-        if (td) {
-          const txtValue = td.textContent || td.innerText;
-          tr[i].style.display = txtValue.toLowerCase().indexOf(filter) > -1 ? "" : "none";
-        }
-      }
+  const input = document.getElementById('searchInput');
+  // Normalizamos el valor del input (quitamos espacios extra y pasamos a minúsculas)
+  const filter = input.value.trim().replace(/\s+/g, " ").toLowerCase();
+
+  const table = document.getElementById('categoriesTable');
+  const tr = table.getElementsByTagName('tr');
+
+  for (let i = 1; i < tr.length; i++) {
+    const td = tr[i].getElementsByTagName('td')[1]; // columna de nombre categoría
+    if (td) {
+      // Normalizamos también el texto de la celda
+      const txtValue = (td.textContent || td.innerText)
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLowerCase();
+
+      tr[i].style.display = txtValue.includes(filter) ? "" : "none";
     }
+  }
+}
+
 
     // Cerrar offcanvas al hacer clic en un enlace (mejora UX móvil)
     document.addEventListener('DOMContentLoaded', function() {

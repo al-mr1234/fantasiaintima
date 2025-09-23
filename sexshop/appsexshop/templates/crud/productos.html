@@ -327,19 +327,29 @@
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    //Buscador
     function filterProducts() {
-      const input = document.getElementById('searchInput');
-      const filter = input.value.toLowerCase();
-      const table = document.getElementById('productsTable');
-      const tr = table.getElementsByTagName('tr');
-      for (let i = 1; i < tr.length; i++) {
-        const td = tr[i].getElementsByTagName('td')[1]; // filtra por nombre del producto
-        if (td) {
-          const txtValue = td.textContent || td.innerText;
-          tr[i].style.display = txtValue.toLowerCase().indexOf(filter) > -1 ? "" : "none";
-        }
-      }
+  const input = document.getElementById('searchInput');
+  // Elimina espacios al inicio y al final y convierte múltiples espacios en uno solo
+  const filter = input.value.trim().replace(/\s+/g, " ").toLowerCase();
+
+  const table = document.getElementById('productsTable');
+  const tr = table.getElementsByTagName('tr');
+
+  for (let i = 1; i < tr.length; i++) {
+    const td = tr[i].getElementsByTagName('td')[1]; // filtra por nombre del producto
+    if (td) {
+      // Normalizamos también el texto de la celda
+      const txtValue = (td.textContent || td.innerText)
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLowerCase();
+
+      tr[i].style.display = txtValue.includes(filter) ? "" : "none";
     }
+  }
+}
+
 
     // Cerrar offcanvas al hacer clic en un link
     document.addEventListener('DOMContentLoaded', function() {

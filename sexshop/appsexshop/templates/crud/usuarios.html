@@ -281,24 +281,34 @@
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    function filterUsuarios() {
-      const input = document.getElementById('searchInput');
-      const filter = input.value.toLowerCase();
-      const table = document.getElementById('usuariosTable');
-      const tr = table.getElementsByTagName('tr');
-      for (let i = 1; i < tr.length; i++) {
-        const tds = tr[i].getElementsByTagName('td');
-        let rowText = "";
-        for (let j = 0; j < tds.length - 1; j++) {  // excluye la columna de acciones
-          rowText += tds[j].textContent.toLowerCase() + " ";
-        }
-        if (rowText.indexOf(filter) > -1) {
-          tr[i].style.display = "";
-        } else {
-          tr[i].style.display = "none";
-        }
-      }
+    //Buscador
+   function filterUsuarios() {
+  const input = document.getElementById('searchInput');
+  // Limpia espacios extra y pasa a minúsculas
+  const filter = input.value.trim().replace(/\s+/g, " ").toLowerCase();
+
+  const table = document.getElementById('usuariosTable');
+  const tr = table.getElementsByTagName('tr');
+
+  for (let i = 1; i < tr.length; i++) {
+    const tds = tr[i].getElementsByTagName('td');
+    let rowText = "";
+
+    for (let j = 0; j < tds.length - 1; j++) { // excluye la columna de acciones
+      rowText += (tds[j].textContent || tds[j].innerText) + " ";
     }
+
+    // Normalizamos también el texto de cada fila
+    const cleanRowText = rowText.trim().replace(/\s+/g, " ").toLowerCase();
+
+    if (cleanRowText.includes(filter)) {
+      tr[i].style.display = "";
+    } else {
+      tr[i].style.display = "none";
+    }
+  }
+}
+
 
     // Toggle sidebar para móviles
     document.getElementById('iconNavbarSidenav').addEventListener('click', function() {

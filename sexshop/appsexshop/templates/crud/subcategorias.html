@@ -330,19 +330,29 @@
   <script src="{% static 'js/smooth-scrollbar.min.js' %}"></script>
 
   <script>
-    function filterSubCategories() {
-      const input = document.getElementById('searchInput');
-      const filter = input.value.toLowerCase();
-      const table = document.getElementById('subcategoriesTable');
-      const tr = table.getElementsByTagName('tr');
-      for (let i = 1; i < tr.length; i++) {
-        const td = tr[i].getElementsByTagName('td')[2];
-        if (td) {
-          const txtValue = td.textContent || td.innerText;
-          tr[i].style.display = txtValue.toLowerCase().indexOf(filter) > -1 ? "" : "none";
-        }
-      }
+    //buscador
+   function filterSubCategories() {
+  const input = document.getElementById('searchInput');
+  // Normalizamos el texto del input (sin espacios sobrantes y en minúsculas)
+  const filter = input.value.trim().replace(/\s+/g, " ").toLowerCase();
+
+  const table = document.getElementById('subcategoriesTable');
+  const tr = table.getElementsByTagName('tr');
+
+  for (let i = 1; i < tr.length; i++) {
+    const td = tr[i].getElementsByTagName('td')[2]; // filtra por columna de subcategoría
+    if (td) {
+      // Normalizamos el texto de la celda
+      const txtValue = (td.textContent || td.innerText)
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLowerCase();
+
+      tr[i].style.display = txtValue.includes(filter) ? "" : "none";
     }
+  }
+}
+
 
     // cerrar offcanvas al hacer clic en link
     document.addEventListener('DOMContentLoaded', function() {
