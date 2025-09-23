@@ -907,7 +907,7 @@ def carrito(request):
 
 def lencerias(request):
     # Obtener la categoría de lencería
-    categoria_lenceria = categoria.objects.get(NombreCategoria='Lencería')
+    categoria_lenceria = categoria.objects.get(NombreCategoria='lenceria')
     
     # Filtrar productos que pertenecen a la categoría de lencería o a sus subcategorías
     productos = producto.objects.filter(IdSubCategoria__categoria=categoria_lenceria).order_by('-IdProducto')
