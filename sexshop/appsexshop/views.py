@@ -39,7 +39,18 @@ from django.core.files.storage import FileSystemStorage
 from django.core.files.storage import default_storage
 from django.utils import timezone
 from django.http import HttpResponseBadRequest
+from django.contrib import messages
+from django.contrib.auth.hashers import make_password
+from django.shortcuts import redirect, render
+from django.views.decorators.csrf import csrf_exempt
+import json
+import logging
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.db import transaction
+from django.urls import reverse
 
+#region landing page
 def LadingPage(request):
     categorias = categoria.objects.all().prefetch_related('subcategoria_set')
     productos = producto.objects.all().select_related('IdSubCategoria__categoria').order_by('-IdProducto')
@@ -56,7 +67,7 @@ def LadingPage(request):
         'username': request.session.get('username', ''),
         'first_name': request.session.get('first_name', ''),
     })
-
+#endregion
 
 #region categorias
 def validar_nombre_categoria(nombre):
@@ -129,6 +140,9 @@ def actualizarcategoria(request, id_categoria):
         categoria.execute("CALL consultarcategoria(%s)", [id_categoria])
         categoria = categoria.fetchone()
         return render(request, 'crud/editar_categoria.html', {'categoria': categoria})
+    
+def crudCategorias(request):
+    return render(request, 'crud/categorias.html')
 # endregion
 
 
@@ -204,6 +218,12 @@ def borrarsubcategoria(request, id_subcategoria):
     subcat.delete()
     messages.success(request, "Subcategoría eliminada")
     return redirect(f'{reverse("listadosubcategorias")}?page={page}')
+
+
+def crudSubCategorias(request):
+    subcategorias = subcategoria.objects.all()
+    categorias = categoria.objects.all()
+    return render(request, 'crud/subcategorias.html', {'subcategorias': subcategorias, 'categorias': categorias})
 #endregion
 
 
@@ -247,8 +267,6 @@ def validar_registro_usuario(data):
 
     return None  # Todo está bien
 
-
-   
 
 def registro(request):
     if request.method == "POST":
@@ -362,7 +380,10 @@ def login(request):
 def logout(request):
     request.session.flush()
     return redirect('Ladingpage')  
+# endregion
 
+
+#region contrasena
 def solicitar_recuperacion(request):
     if request.method == 'POST':
         email = request.POST.get('email')
@@ -515,10 +536,18 @@ def nueva_contrasena(request):
     
     return render(request, 'login/nuevaContraseña.html')
 
+def recuperarContraseña(request):
+    return render(request, 'login/recuperarcontraseña.html')
 
-from django.contrib import messages
-from django.contrib.auth.hashers import make_password
+def codigo(request):
+    return render(request, 'login/codigo.html')
 
+def nuevaContraseña(request):
+    return render(request, 'login/nuevaContraseña.html')
+
+#endregion
+
+#region usuarios
 def insertarusuario(request):
     if request.method == "POST":
         # Validar que todos los campos requeridos estén presentes
@@ -562,8 +591,6 @@ def insertarusuario(request):
 
     return redirect('crudUsuarios')
 
-
-
 def editarusuario(request, id_usuario):
     page = request.GET.get('page', 1)
     usuario_obj = usuario.objects.get(IdUsuario=id_usuario)
@@ -580,13 +607,18 @@ def editarusuario(request, id_usuario):
         return redirect(f'{reverse("crudUsuarios")}?page={page}')
     return render(request, 'crud/editar_usuario.html', {'usuario': usuario_obj})
 
-
 def borrarusuario(request, id_usuario):
     page = request.GET.get('page', 1)
     usuario_obj = usuario.objects.get(IdUsuario=id_usuario)
     usuario_obj.delete()
     return redirect(f'{reverse("crudUsuarios")}?page={page}')
-      
+
+def crudUsuarios(request):
+    usuarios_list = usuario.objects.filter(idRol=2).order_by('-IdUsuario')
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(usuarios_list, 5)
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'crud/usuarios.html', {'page_obj': page_obj})
 #endregion
 
 
@@ -630,7 +662,6 @@ def insertardomiciliario(request):
 
     return redirect('crudDomiciliarios')
 
-
 def editardomiciliario(request, id_domiciliario):
     page = request.GET.get('page', 1)
     domiciliario_obj = get_object_or_404(domiciliario, IdDomiciliario=id_domiciliario)
@@ -655,6 +686,14 @@ def borrardomiciliario(request, id_domiciliario):
     domiciliario_obj = domiciliario.objects.get(IdDomiciliario=id_domiciliario)
     domiciliario_obj.delete()
     return redirect(f'{reverse("crudDomiciliarios")}?page={page}')
+
+
+def crudDomiciliarios(request):
+    domiciliarios_list = domiciliario.objects.filter(IdRol=3).order_by('-IdDomiciliario')
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(domiciliarios_list, 5)
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'crud/domiciliarios.html', {'page_obj': page_obj})
 #endregion
 
 
@@ -748,6 +787,19 @@ def borrarproducto(request, id_producto):
     producto_obj.delete()
     return redirect(f'{reverse("crudProductos")}?page={page}') 
 
+def crudProductos(request):
+    productos_list = producto.objects.all().order_by('-IdProducto')
+    subcategorias = subcategoria.objects.all()
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(productos_list, 5) 
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'crud/productos.html', {
+        'page_obj': page_obj,
+        'subcategorias': subcategorias
+    })
+#endregion
+
+#region calificaciones
 @csrf_exempt
 def guardar_calificacion(request):
     try:
@@ -781,7 +833,7 @@ def guardar_calificacion(request):
     except Exception as e:
             print(f"Error interno: {str(e)}")
             return JsonResponse({'success': False, 'mensaje': str(e)})
-
+# endregion
 
 # region perfiles
 def perfiles(request):
@@ -852,61 +904,9 @@ def eliminar_cuenta(request):
     return JsonResponse({'status': 'error'}, status=400)
 # endregion
 
-def crudCategorias(request):
-    return render(request, 'crud/categorias.html')
-
-def crudSubCategorias(request):
-    subcategorias = subcategoria.objects.all()
-    categorias = categoria.objects.all()
-    return render(request, 'crud/subcategorias.html', {'subcategorias': subcategorias, 'categorias': categorias})
-
-def crudProductos(request):
-    productos_list = producto.objects.all().order_by('-IdProducto')
-    subcategorias = subcategoria.objects.all()
-    page_number = request.GET.get('page', 1)
-    paginator = Paginator(productos_list, 5) 
-    page_obj = paginator.get_page(page_number)
-    return render(request, 'crud/productos.html', {
-        'page_obj': page_obj,
-        'subcategorias': subcategorias
-    })
-
-def crudDomiciliarios(request):
-    domiciliarios_list = domiciliario.objects.filter(IdRol=3).order_by('-IdDomiciliario')
-    page_number = request.GET.get('page', 1)
-    paginator = Paginator(domiciliarios_list, 5)
-    page_obj = paginator.get_page(page_number)
-    return render(request, 'crud/domiciliarios.html', {'page_obj': page_obj})
-
-
-def crudUsuarios(request):
-    usuarios_list = usuario.objects.filter(idRol=2).order_by('-IdUsuario')
-    page_number = request.GET.get('page', 1)
-    paginator = Paginator(usuarios_list, 5)
-    page_obj = paginator.get_page(page_number)
-    return render(request, 'crud/usuarios.html', {'page_obj': page_obj})
-
-
-def recuperarContraseña(request):
-    return render(request, 'login/recuperarcontraseña.html')
-
-
-
-def codigo(request):
-    return render(request, 'login/codigo.html')
-
-def nuevaContraseña(request):
-    return render(request, 'login/nuevaContraseña.html')
-
-def devoluciones(request):
-    return render(request, 'pedidos/devoluciones.html')
-
-
-def carrito(request):
-    return render(request, 'carrito/carrito.html')
-
+#region filtrar Filtrar productos que pertenecen a la categoría
 def lencerias(request):
-    # Obtener la categoría de lencería
+    # Obtener la categoría
     categoria_lenceria = categoria.objects.get(NombreCategoria='lenceria')
     
     # Filtrar productos que pertenecen a la categoría de lencería o a sus subcategorías
@@ -915,28 +915,19 @@ def lencerias(request):
     return render(request, 'carrito/lencerias.html', {'productos': productos})
 
 def vibradores(request):
-    # Obtener la categoría de vibradores
-    categoria_vibrador = categoria.objects.get(NombreCategoria='vibradores')  # Cambiado a get
-    
-    # Filtrar productos que pertenecen a la categoría de vibradores o a sus subcategorías
+    categoria_vibrador = categoria.objects.get(NombreCategoria='vibradores')  
     productos = producto.objects.filter(IdSubCategoria__categoria=categoria_vibrador).order_by('-IdProducto')
     
     return render(request, 'carrito/vibradores.html', {'productos': productos})
 
 def disfraces(request):
-    # Obtener la categoría de disfraces
-    categoria_disfraces = categoria.objects.get(NombreCategoria='disfraces')  # Cambiado a 'Lencería'
-    
-    # Filtrar productos que pertenecen a la categoría de lencería o a sus subcategorías
+    categoria_disfraces = categoria.objects.get(NombreCategoria='disfraces')  
     productos = producto.objects.filter(IdSubCategoria__categoria=categoria_disfraces).order_by('-IdProducto')
     
     return render(request, 'carrito/disfraces.html', {'productos': productos})
 
 def dildos(request):
-    # Obtener la categoría de dildos
-    categoria_dildo = categoria.objects.get(NombreCategoria='Dildos')  # Cambiado a get
-    
-    # Filtrar productos que pertenecen a la categoría de dildos o a sus subcategorías
+    categoria_dildo = categoria.objects.get(NombreCategoria='Dildos')  
     productos = producto.objects.filter(IdSubCategoria__categoria=categoria_dildo).order_by('-IdProducto')
     
     return render(request, 'carrito/dildos.html', {'productos': productos})
@@ -945,12 +936,9 @@ def productosCarrito(request):
     productos = producto.objects.all().order_by('-IdProducto') # Obtener todos los productos  
     categorias = categoria.objects.prefetch_related('subcategoria_set').all()
     return render(request, 'carrito/productos.html', {'productos': productos,'categorias': categorias, })
+#endregion
 
-from django.shortcuts import redirect, render
-from django.views.decorators.csrf import csrf_exempt
-import json
-
-
+#region notificaciones
 def lista_notificaciones(request):
     notificaciones = Notificacion.objects.all().order_by('-fecha')
 
@@ -974,8 +962,9 @@ def marcar_leida(request, id_notificacion):
             return JsonResponse({'success': False, 'mensaje': 'Notificación no encontrada'}, status=404)
 
     return JsonResponse({'success': False, 'mensaje': 'Método no permitido'}, status=405)
+#endregion
 
-
+#region stock
 @csrf_exempt
 def actualizar_stock(request):
     if request.method != 'POST':
@@ -1042,9 +1031,9 @@ def actualizar_stock(request):
         return JsonResponse({'success': False, 'mensaje': 'Producto no encontrado'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'mensaje': str(e)}, status=500)
-    
+# endregion
 
-#region pedidos
+#region agregar al carrito
 @csrf_exempt
 def agregar_al_carrito(request, producto_id):
     if request.method == "POST":
@@ -1066,10 +1055,9 @@ def agregar_al_carrito(request, producto_id):
             })
 
         return JsonResponse({"success": False, "error": "Sin stock"})
-    
+#endregion
 
-#pasarela de pago
-
+#region pasarela de pago
 def pago_paypal(request):
     # Datos básicos de la transacción
     paypal_dict = {
@@ -1086,20 +1074,11 @@ def pago_paypal(request):
     form = PayPalPaymentsForm(initial=paypal_dict)
     return render(request, "pago.html", {"form": form})
 
-
 def pago_exitoso(request):
     return redirect('pedido')  
 
 def pago_cancelado(request):
     return redirect('carrito')
-
-
-
-import logging
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.db import transaction
-from django.urls import reverse
 
 
 logger = logging.getLogger(__name__)
@@ -1168,7 +1147,9 @@ def pago_paypal_carrito(request):
         except Exception as e:
             return JsonResponse({'error': f'Error interno: {str(e)}'}, status=500)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+#endregion
 
+#region pedidos
 @csrf_exempt
 def detalles_pedido(request, codigo_pedido):
     if request.method == 'GET':
@@ -1250,8 +1231,9 @@ def cancelar_pedido(request, codigo_pedido):
             return JsonResponse({'success': False, 'error': 'El pedido ya estaba cancelado'})
     except HistorialPedido.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Pedido no encontrado'}, status=404)
+# endregion
 
-
+#region estados pedido
 @require_POST
 @transaction.atomic
 def cambiar_estado_pedido(request, codigo_pedido):
@@ -1298,13 +1280,10 @@ def cambiar_estado_pedido(request, codigo_pedido):
         return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'}, status=500)
 
 def solicitud(request):
-    # Pedidos en espera (Solicitados)
     pedidos_espera = HistorialPedido.objects.filter(Estado='Solicitado').order_by('-Fecha')
 
-    # Pedidos aprobados
     pedidos_aprobados = HistorialPedido.objects.filter(Estado='Aprobado').order_by('-Fecha')
 
-    # Pedidos cancelados
     pedidos_cancelados = HistorialPedido.objects.filter(Estado='Cancelado').order_by('-Fecha')
 
     pedidos_enviados = HistorialPedido.objects.filter(Estado='Enviado').order_by('-Fecha')
@@ -1334,6 +1313,7 @@ def solicitud(request):
     }
 
     return render(request, 'solicitud.html', context)
+#endregion
 
 #region productos filtrados por subcategoria
 def productos_por_subcategoria(request, id_subcategoria):
@@ -1346,4 +1326,10 @@ def productos_por_subcategoria(request, id_subcategoria):
         "subcategoria": subcat,
         "productos": productos
     })
+#endregion
 
+def devoluciones(request):
+    return render(request, 'pedidos/devoluciones.html')
+
+def carrito(request):
+    return render(request, 'carrito/carrito.html')
